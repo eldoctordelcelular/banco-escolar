@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banco Escolar QR - Gamificación</title>
+    <!-- Firebase Compat (UMD) Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #printable-area,
+            #printable-area * {
+                visibility: visible;
+            }
+
+            #printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        .oculto {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-700 text-white shadow-md no-print">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-building-columns text-2xl text-amber-300"></i>
+                <h1 class="text-xl font-bold tracking-tight">Banco Escolar</h1>
+            </div>
+            <div id="user-badge" class="oculto flex items-center gap-3">
+                <span id="role-label" class="text-xs bg-indigo-800 px-3 py-1 rounded-full text-indigo-200"></span>
+                <button onclick="cerrarSesion()" class="text-sm hover:text-red-300 transition flex items-center gap-1">
+                    <i class="fa-solid fa-right-from-bracket"></i> Salir
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navegación Dinámica -->
+    <nav id="main-nav" class="bg-white border-b border-slate-200 sticky top-0 z-20 no-print oculto">
+        <div class="max-w-6xl mx-auto px-4 flex justify-start overflow-x-auto space-x-1" id="nav-tabs-container">
+            <!-- Pestañas inyectadas dinámicamente vía JS según el rol -->
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6">
+
+        <!-- 1. PANTALLA DE INICIO / LOGIN DE 3 NIVELES -->
+        <section id="vista-login" class="flex flex-col items-center justify-center min-h-[65vh] space-y-6">
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center max-w-md w-full">
+                <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl mx-auto flex items-center justify-center mb-4 shadow-inner">
+                    <i class="fa-solid fa-building-columns text-4xl"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800 mb-1">Banco Escolar QR</h2>
+                <p class="text-xs text-slate-500 mb-6">Selecciona tu perfil de acceso para continuar</p>
+
+                <div class="space-y-3.5">
+                    <!-- Ingreso Alumno: Abre escáner QR directo -->
+                    <button onclick="loginAlumno()"
+                        class="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-bold text-base hover:bg-emerald-700 shadow flex items-center justify-center gap-2.5 transition active:scale-[0.99]">
+                        <i class="fa-solid fa-qrcode text-xl"></i> Ingreso Alumno
+                    </button>
+
+                    <!-- Ingreso Profesor: Abre modal limpio con Usuario y Clave -->
+                    <button onclick="abrirModalLoginProfesor()"
+                        class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-base hover:bg-indigo-700 shadow flex items-center justify-center gap-2.5 transition active:scale-[0.99]">
+                        <i class="fa-solid fa-chalkboard-user text-xl"></i> Ingreso Profesor
+                    </button>
+
+                    <!-- Ingreso Dirección: Prompt con clave maestra 9999 -->
+                    <button onclick="loginSuperAdmin()"
+                        class="w-full py-3.5 bg-slate-800 text-white rounded-xl font-bold text-base hover:bg-slate-900 shadow flex items-center justify-center gap-2.5 transition active:scale-[0.99]">
+                        <i class="fa-solid fa-user-tie text-xl"></i> Ingreso Dirección
+                    </button>
+
+                    <!-- Acceso Público al Ranking -->
+                    <button onclick="loginRanking()"
+                        class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 shadow-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-trophy text-amber-500"></i> Ver Ranking Escolar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL LOGIN PROFESOR (Usuario y Clave) -->
+        <div id="modal-login-profesor"
+            class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 oculto">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 relative">
+                <button onclick="cerrarModalLoginProfesor()"
+                    class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-2">
+                        <i class="fa-solid fa-chalkboard-user text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-xl text-slate-800">Acceso Docente</h3>
+                    <p class="text-xs text-slate-500">Ingresa tus credenciales de profesor</p>
+                </div>
+                <form onsubmit="procesarLoginProfesor(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Usuario</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-user text-sm"></i>
+                            </span>
+                            <input type="text" id="login-prof-usuario" placeholder="Ej. jperez" required
+                                class="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Clave</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-lock text-sm"></i>
+                            </span>
+                            <input type="password" id="login-prof-clave" placeholder="••••••••" required
+                                class="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" onclick="cerrarModalLoginProfesor()"
+                            class="w-1/2 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="w-1/2 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 shadow transition">
+                            Entrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL ESCÁNER QR -->
+        <div id="modal-escaner"
+            class="fixed inset-0 bg-slate-900 bg-opacity-90 z-50 flex flex-col items-center justify-center p-4 oculto">
+            <div class="bg-white p-5 rounded-2xl max-w-sm w-full shadow-2xl">
+                <h3 class="text-center font-bold text-slate-800 mb-3" id="titulo-escaner">Escanear Credencial</h3>
+                <div id="reader"
+                    class="w-full rounded-lg overflow-hidden border border-slate-300 bg-black min-h-[250px]"></div>
+                <!-- ID manual solo visible para el profesor en el cajero, oculto para el alumno -->
+                <div id="contenedor-id-manual" class="mt-4 flex gap-2">
+                    <input type="text" id="manual-id-global" placeholder="ID Manual"
+                        class="w-full px-3 py-2 border rounded-lg text-sm">
+                    <button onclick="procesarEscaneoManual()"
+                        class="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold text-sm">Entrar</button>
+                </div>
+                <button onclick="cerrarEscanerGlobal()"
+                    class="mt-3 w-full py-2 text-slate-500 font-semibold text-sm hover:bg-slate-100 rounded-lg">Cerrar</button>
+            </div>
+        </div>
+
+        <!-- 2. VISTA DE DIRECCIÓN (SUPER ADMIN) -->
+        <section id="vista-sa-profesores" class="oculto space-y-6 vistas-app">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-user-plus text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">Registrar Nuevo Profesor</h3>
+                        <p class="text-xs text-slate-500">Crea credenciales de acceso para los docentes de la institución</p>
+                    </div>
+                </div>
+                <form onsubmit="saRegistrarProfesor(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
+                        <input type="text" id="sa-prof-nombre" placeholder="Ej. Ana María Martínez" required
+                            class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Usuario</label>
+                        <input type="text" id="sa-prof-usuario" placeholder="Ej. anamaria" required
+                            class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Clave</label>
+                        <input type="text" id="sa-prof-clave" placeholder="Ej. clave123" required
+                            class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit"
+                            class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 shadow transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Registrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabla de Profesores Registrados con Borrado en Cascada -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Profesores Registrados</h3>
+                        <p class="text-xs text-slate-500">Gestión de cuentas y borrado con cascada multi-tabla</p>
+                    </div>
+                    <span id="sa-prof-conteo" class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">0 Profesores</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">ID</th>
+                                <th class="px-4 py-3">Nombre</th>
+                                <th class="px-4 py-3">Usuario</th>
+                                <th class="px-4 py-3">Clave</th>
+                                <th class="px-4 py-3 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-sa-profesores" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. VISTA PROFESOR: PESTAÑA "MIS CURSOS" -->
+        <section id="vista-prof-cursos" class="oculto space-y-6 vistas-app">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-graduation-cap text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">Crear Nuevo Curso</h3>
+                        <p class="text-xs text-slate-500">Agrega cursos que pertenecerán exclusivamente a tu cuenta</p>
+                    </div>
+                </div>
+                <form onsubmit="profCrearCurso(event)" class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="prof-nuevo-curso" placeholder="Nombre del curso (ej. 5° Básico B)" required
+                        class="px-3 py-2.5 border rounded-xl text-sm flex-grow">
+                    <button type="submit"
+                        class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 whitespace-nowrap shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Crear Curso
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Mis Cursos Activos</h3>
+                        <p class="text-xs text-slate-500">Al eliminar un curso se aplicará borrado en cascada (alumnos y compras)</p>
+                    </div>
+                </div>
+                <div id="grilla-mis-cursos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- Inyectado por JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. VISTA PROFESOR: PESTAÑA "REGISTRO & CREDENCIALES" -->
+        <section id="vista-prof-credenciales" class="oculto space-y-6 vistas-app">
+            <!-- Formulario de Registro con Selector de Cursos del Profesor -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-id-card text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">Registrar Alumno</h3>
+                        <p class="text-xs text-slate-500">Asigna al estudiante a uno de tus cursos para generar su credencial QR</p>
+                    </div>
+                </div>
+                <form onsubmit="profRegistrarAlumno(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Selecciona el Curso</label>
+                        <select id="prof-reg-curso-select" required
+                            class="w-full px-3 py-2.5 border rounded-xl text-sm font-semibold text-indigo-700 bg-indigo-50/50">
+                            <!-- Opciones cargadas por JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo del Alumno</label>
+                        <input type="text" id="prof-reg-nombre" placeholder="Ej. Camila Morales" required
+                            class="w-full px-3 py-2.5 border rounded-xl text-sm">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit"
+                            class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 shadow transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i> Registrar & Crear QR
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Grilla de Tarjetas Imprimibles de Credenciales -->
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-slate-600 uppercase">Filtrar por curso:</label>
+                        <select id="filtro-credenciales-curso" onchange="renderizarTarjetas()"
+                            class="px-3 py-1.5 border rounded-lg text-xs font-bold text-indigo-700 bg-slate-50">
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="seleccionarTodasCredenciales(true)"
+                            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">
+                            Marcar Todos
+                        </button>
+                        <button onclick="seleccionarTodasCredenciales(false)"
+                            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">
+                            Desmarcar
+                        </button>
+                        <button onclick="window.print()"
+                            class="px-4 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-bold hover:bg-slate-900 shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-print"></i> Imprimir Credenciales
+                        </button>
+                    </div>
+                </div>
+
+                <div id="printable-area" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Credenciales verticales inyectadas con qrcodejs -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. VISTA PROFESOR: CAJERO -->
+        <section id="vista-prof-cajero" class="oculto space-y-6 vistas-app">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
+                <h2 class="text-xl font-bold text-slate-800 mb-2">Cajero del Docente</h2>
+                <p class="text-xs text-slate-500 mb-4">Selecciona el curso para operar y luego escanea la credencial del alumno</p>
+                <div class="mb-5 flex justify-center">
+                    <select id="cajero-curso-selector"
+                        class="px-4 py-2.5 border rounded-xl text-sm font-semibold bg-slate-50 w-full max-w-xs text-indigo-700"></select>
+                </div>
+                <button onclick="abrirEscanerGlobal('cajero')"
+                    class="px-6 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-base hover:bg-indigo-700 shadow-lg transition active:scale-[0.99] inline-flex items-center gap-2">
+                    <i class="fa-solid fa-camera text-lg"></i> Escanear Credencial Alumno
+                </button>
+            </div>
+
+            <!-- Panel de Operación del Alumno Escaneado -->
+            <div id="panel-cajero-alumno"
+                class="oculto bg-white rounded-2xl shadow border border-slate-200 p-6 space-y-5">
+                <div class="flex justify-between items-center border-b pb-4">
+                    <div>
+                        <h2 id="cajero-nombre-display" class="text-2xl font-black text-slate-800">Nombre</h2>
+                        <p id="cajero-id-display" class="font-mono text-xs text-slate-500">ID</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-semibold text-slate-400">Saldo Disponible</span>
+                        <p id="cajero-saldo-display" class="text-3xl font-extrabold text-emerald-600">0 pts</p>
+                    </div>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Abono Rápido</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <button onclick="aplicarPuntos(50, 'Tarea')"
+                            class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition">
+                            +50 pts <span class="block text-[11px] font-normal text-emerald-700">Tarea</span>
+                        </button>
+                        <button onclick="aplicarPuntos(30, 'Participación')"
+                            class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition">
+                            +30 pts <span class="block text-[11px] font-normal text-emerald-700">Participación</span>
+                        </button>
+                        <button onclick="aplicarPuntos(20, 'Compañerismo')"
+                            class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition">
+                            +20 pts <span class="block text-[11px] font-normal text-emerald-700">Compañerismo</span>
+                        </button>
+                        <button onclick="aplicarPuntos(-20, 'Atención')"
+                            class="p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm font-bold hover:bg-red-100 transition">
+                            -20 pts <span class="block text-[11px] font-normal text-red-700">Atención</span>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Abono / Descuento Manual</span>
+                    <div class="flex gap-2">
+                        <input type="number" id="monto-personalizado" placeholder="Monto (+ ó -)"
+                            class="w-32 px-3 py-2 border rounded-xl text-sm">
+                        <input type="text" id="concepto-personalizado" placeholder="Concepto personalizado"
+                            class="flex-grow px-3 py-2 border rounded-xl text-sm">
+                        <button onclick="abonoManual()"
+                            class="px-5 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 shadow transition">
+                            Procesar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. VISTA PROFESOR: BANDEJA DE CANJES -->
+        <section id="vista-prof-canjes" class="oculto space-y-6 vistas-app">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Bandeja de Canjes</h2>
+                    <p class="text-sm text-slate-500">Supervisa las solicitudes de premios canjeados por tus alumnos.</p>
+                </div>
+                <button onclick="limpiarCanjesCompletados()"
+                    class="px-4 py-2 text-xs font-bold bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700 transition self-start sm:self-auto">
+                    <i class="fa-solid fa-box-archive mr-1"></i> Archivar Validados
+                </button>
+            </div>
+            <div class="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-600 uppercase">Filtrar por Curso:</span>
+                <select id="canjes-curso-selector" onchange="renderizarTablaCanjesProf()"
+                    class="px-3 py-1.5 border rounded-lg text-sm bg-slate-50 text-indigo-700 font-semibold"></select>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">Fecha y Hora</th>
+                                <th class="px-4 py-3">Alumno</th>
+                                <th class="px-4 py-3">Premio</th>
+                                <th class="px-4 py-3 text-right">Costo</th>
+                                <th class="px-4 py-3 text-center">Estado</th>
+                                <th class="px-4 py-3 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-canjes-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. VISTA PROFESOR: TIENDA -->
+        <section id="vista-prof-tienda" class="oculto space-y-6 vistas-app">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center">
+                        <i class="fa-solid fa-gift text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">Crear Premio para la Tienda</h3>
+                        <p class="text-xs text-slate-500">Disponible para todos los alumnos asociados a tu cuenta</p>
+                    </div>
+                </div>
+                <form onsubmit="profCrearPremio(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" id="premio-titulo" placeholder="Nombre (ej. +0.5 Décimas para la prueba)" required
+                        class="md:col-span-2 px-3 py-2.5 border rounded-xl text-sm">
+                    <input type="number" id="premio-costo" placeholder="Costo en puntos" min="1" required
+                        class="px-3 py-2.5 border rounded-xl text-sm">
+                    <button type="submit"
+                        class="px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check"></i> Guardar Premio
+                    </button>
+                </form>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="font-bold text-slate-800 mb-4">Catálogo de Tu Tienda</h3>
+                <ul id="lista-admin-premios" class="divide-y divide-slate-100"></ul>
+            </div>
+        </section>
+
+        <!-- 8. VISTA ALUMNO: TIENDA Y BILLETERA -->
+        <section id="vista-alumno-tienda" class="oculto space-y-6 vistas-app">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-800 rounded-3xl p-6 text-white shadow-xl flex justify-between items-center">
+                <div>
+                    <span class="text-xs uppercase tracking-wider text-emerald-200 font-semibold"
+                        id="mi-curso-display">Curso</span>
+                    <h2 id="mi-nombre-display" class="text-2xl md:text-3xl font-black mt-1">Nombre Alumno</h2>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs uppercase tracking-wider text-emerald-200 font-semibold">Saldo Disponible</span>
+                    <p id="mi-saldo-display" class="text-3xl md:text-4xl font-black text-amber-300">0 pts</p>
+                </div>
+            </div>
+            <h3 class="font-bold text-xl text-slate-800 mt-6 mb-2">Tienda de Premios</h3>
+            <div id="catalogo-alumno-tienda" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- 9. VISTA ALUMNO: MIS CUPONES -->
+        <section id="vista-alumno-mis-canjes" class="oculto space-y-6 vistas-app">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">Mis Cupones</h2>
+                <p class="text-xs text-slate-500">Muestra estos cupones a tu profesor para que valide la entrega del premio.</p>
+            </div>
+            <div id="lista-mis-cupones" class="space-y-3"></div>
+        </section>
+
+        <!-- 10. VISTA DASHBOARD & RANKING -->
+        <section id="vista-dashboard" class="oculto space-y-8 vistas-app">
+            <div class="flex flex-col md:flex-row gap-4 items-center mb-6 justify-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <span class="font-bold text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-2"></i>Ver Ranking del Curso:</span>
+                <select id="ranking-curso-selector" onchange="actualizarDashboard()"
+                    class="px-4 py-2 border rounded-xl font-bold text-indigo-700 bg-indigo-50 min-w-[250px]"></select>
+            </div>
+
+            <div class="relative bg-gradient-to-r from-violet-900 via-indigo-800 to-purple-900 text-white p-6 rounded-3xl shadow-xl overflow-hidden border border-indigo-500/30">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
+                <div class="flex justify-between items-end mb-3 relative z-10">
+                    <div>
+                        <span class="text-indigo-200 text-xs font-bold uppercase tracking-wider">Desafío del Curso</span>
+                        <h3 class="font-black text-2xl flex items-center gap-2 mt-1">
+                            <i class="fa-solid fa-rocket text-amber-400 animate-pulse"></i> Meta Colectiva
+                            <button onclick="editarMeta()" id="btn-editar-meta"
+                                class="oculto ml-2 text-indigo-300 hover:text-white text-base transition"
+                                title="Configurar Meta"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </h3>
+                    </div>
+                    <div class="text-right">
+                        <span id="meta-porcentaje"
+                            class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">0%</span>
+                    </div>
+                </div>
+                <div class="relative w-full bg-indigo-950/50 rounded-full h-6 p-1 backdrop-blur-sm border border-indigo-900/50 z-10">
+                    <div id="meta-progreso-bar"
+                        class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(251,191,36,0.5)] flex justify-end items-center pr-2"
+                        style="width: 0%">
+                        <i class="fa-solid fa-star text-white text-xs opacity-80"></i>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mt-2 relative z-10">
+                    <span class="text-xs text-indigo-300 font-medium" id="meta-recompensa-texto">Recompensa: 15 min de recreo extra</span>
+                    <span class="text-xs font-bold text-amber-200 bg-black/20 px-3 py-1 rounded-full"
+                        id="meta-texto-detalle">0 / 5000 pts</span>
+                </div>
+            </div>
+
+            <!-- Podio de los 3 mejores -->
+            <div class="pt-8 pb-4">
+                <h3 class="text-center font-black text-2xl text-slate-800 mb-8 tracking-tight">Salón de la Fama</h3>
+                <div class="flex justify-center items-end gap-2 md:gap-4 h-56" id="podio-container"></div>
+            </div>
+
+            <!-- Tabla de Clasificación General -->
+            <div class="bg-white rounded-3xl shadow-lg border border-slate-200/60 overflow-hidden">
+                <div class="bg-slate-50/50 px-6 py-5 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-lg">Clasificación del Curso</h3>
+                    <i class="fa-solid fa-medal text-slate-300 text-xl"></i>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-white text-slate-400 uppercase text-[10px] font-extrabold tracking-wider">
+                            <tr>
+                                <th class="px-6 py-4">Puesto</th>
+                                <th class="px-6 py-4">Estudiante</th>
+                                <th class="px-6 py-4 text-right">Saldo (Billetera)</th>
+                                <th class="px-6 py-4 text-right">Total Histórico</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ranking-body" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Script de Lógica de Negocio y Persistencia en Firebase Realtime Database -->
+    <script>
+        const CLAVE_DIRECCION = "9999";
+
+        // Configuración de Firebase Realtime Database
+        const firebaseConfig = {
+            apiKey: "AIzaSyDob8YmSqj6ktX3XpykuZniSNDNagU-41c",
+            authDomain: "banco-escolar-86f27.firebaseapp.com",
+            databaseURL: "https://banco-escolar-86f27-default-rtdb.firebaseio.com",
+            projectId: "banco-escolar-86f27",
+            storageBucket: "banco-escolar-86f27.firebasestorage.app",
+            messagingSenderId: "328309535329",
+            appId: "1:328309535329:web:8d64941b5cf2d687fd3020"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const DB_REF = 'datos_banco_escolar';
+
+        // Estructura de Datos Jerárquica Multi-Usuario
+        let estado = {
+            profesores: [], // [{ id, nombre, usuario, clave }]
+            cursos: [],     // [{ id, profesorId, nombre }]
+            alumnos: [],    // [{ id, cursoId, profesorId, nombre, saldo, historico }]
+            tienda: [],     // [{ id, profesorId, titulo, costo }]
+            compras: [],    // [{ id, alumnoId, alumnoNombre, profesorId, cursoId, premioTitulo, costo, fecha, estado }]
+            metas: []       // [{ cursoId, recompensa, puntos }]
+        };
+
+        let usuarioActual = { rol: null, id: null, cursoActivoId: null };
+        let scannerGlobal = null;
+        let contextoEscaner = null;
+
+        // Carga y Sincronización en Tiempo Real desde Firebase
+        function cargarDatos() {
+            database.ref(DB_REF).on('value', (snapshot) => {
+                const datos = snapshot.val();
+                if (datos) {
+                    estado = datos;
+                    if (!estado.profesores) estado.profesores = [];
+                    if (!estado.cursos) estado.cursos = [];
+                    if (!estado.alumnos) estado.alumnos = [];
+                    if (!estado.tienda) estado.tienda = [];
+                    if (!estado.compras) estado.compras = [];
+                    if (!estado.metas) estado.metas = [];
+
+                    // Actualizar la vista activa si el usuario está logueado
+                    if (usuarioActual.rol === 'superadmin' || usuarioActual.rol === 'direccion') {
+                        renderizarTablaSAProfesores();
+                    } else if (usuarioActual.rol === 'profesor') {
+                        actualizarSelectoresCursoProfesor();
+                        actualizarContadorPendientes();
+                        renderizarGrillaCursosProf();
+                        renderizarTarjetas();
+                        renderizarAdminTienda();
+                        renderizarTablaCanjesProf();
+                    } else if (usuarioActual.rol === 'alumno') {
+                        actualizarVistaAlumno();
+                        renderizarMisCupones();
+                    } else if (usuarioActual.rol === 'invitado') {
+                        actualizarSelectoresCursoGlobal();
+                        actualizarDashboard();
+                    }
+                } else {
+                    // Si la base de datos está vacía, inicializar arreglos
+                    estado = { profesores: [], cursos: [], alumnos: [], tienda: [], compras: [], metas: [] };
+                    guardarDatos();
+                }
+            });
+        }
+
+        // Guardado en Firebase Realtime Database
+        function guardarDatos() {
+            database.ref(DB_REF).set(estado).catch(error => {
+                console.error("Error al guardar en Firebase:", error);
+                alert("Error de conexión al guardar los datos.");
+            });
+        }
+
+        // --- SISTEMA DE LOGIN DE 3 NIVELES ---
+
+        // Nivel 1: Ingreso Alumno (Abre escáner directo de cámara)
+        function loginAlumno() {
+            abrirEscanerGlobal('login');
+        }
+
+        // Nivel 2: Ingreso Profesor (Modal limpio con Usuario y Clave)
+        function abrirModalLoginProfesor() {
+            document.getElementById('login-prof-usuario').value = '';
+            document.getElementById('login-prof-clave').value = '';
+            document.getElementById('modal-login-profesor').classList.remove('oculto');
+            document.getElementById('login-prof-usuario').focus();
+        }
+
+        function cerrarModalLoginProfesor() {
+            document.getElementById('modal-login-profesor').classList.add('oculto');
+        }
+
+        function procesarLoginProfesor(e) {
+            e.preventDefault();
+            const usuario = document.getElementById('login-prof-usuario').value.trim();
+            const clave = document.getElementById('login-prof-clave').value.trim();
+
+            const profesor = estado.profesores.find(p => p.usuario.toLowerCase() === usuario.toLowerCase() && p.clave === clave);
+            if (profesor) {
+                cerrarModalLoginProfesor();
+                setUsuario('profesor', profesor.id);
+            } else {
+                alert("Usuario o clave incorrectos. Verifique sus datos.");
+            }
+        }
+
+        // Nivel 3: Ingreso Dirección (Prompt con clave maestra 9999)
+        function loginSuperAdmin() {
+            const clave = prompt("Ingrese la clave maestra de Dirección:");
+            if (clave === CLAVE_DIRECCION) {
+                setUsuario('superadmin', null);
+            } else if (clave !== null) {
+                alert("Clave maestra incorrecta.");
+            }
+        }
+
+        function loginRanking() {
+            setUsuario('invitado', null);
+        }
+
+        // Gestión de Sesión y Renderizado de Navegación según Rol
+        function setUsuario(rol, id) {
+            usuarioActual = { rol, id, cursoActivoId: null };
+            document.getElementById('vista-login').classList.add('oculto');
+            document.getElementById('main-nav').classList.remove('oculto');
+            document.getElementById('user-badge').classList.remove('oculto');
+
+            const navContainer = document.getElementById('nav-tabs-container');
+            navContainer.innerHTML = '';
+            document.querySelectorAll('.vistas-app').forEach(v => v.classList.add('oculto'));
+
+            if (rol === 'superadmin') {
+                document.getElementById('role-label').innerText = "Dirección";
+                navContainer.innerHTML = `
+                    <button onclick="cambiarTab('sa-profesores')" id="tab-sa-profesores" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2 border-indigo-600 text-indigo-600">
+                        <i class="fa-solid fa-users-gear"></i><span>Gestión Profesores</span>
+                    </button>
+                    <button onclick="cambiarTab('dashboard')" id="tab-dashboard" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-slate-500">
+                        <i class="fa-solid fa-trophy"></i><span>Ranking Escolar</span>
+                    </button>
+                `;
+                renderizarTablaSAProfesores();
+                cambiarTab('sa-profesores');
+            }
+            else if (rol === 'profesor') {
+                const prof = estado.profesores.find(p => p.id === id);
+                document.getElementById('role-label').innerText = `Prof: ${prof ? prof.nombre : 'Docente'}`;
+                navContainer.innerHTML = `
+                    <button onclick="cambiarTab('prof-cursos')" id="tab-prof-cursos" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-graduation-cap"></i><span>Mis Cursos</span>
+                    </button>
+                    <button onclick="cambiarTab('prof-credenciales')" id="tab-prof-credenciales" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-id-card"></i><span>Registro & Credenciales</span>
+                    </button>
+                    <button onclick="cambiarTab('prof-cajero')" id="tab-prof-cajero" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-cash-register"></i><span>Cajero</span>
+                    </button>
+                    <button onclick="cambiarTab('prof-canjes')" id="tab-prof-canjes" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-receipt"></i><span>Bandeja de Canjes</span>
+                        <span id="contador-canjes-pendientes" class="ml-1 px-2 py-0.5 text-xs bg-amber-500 text-white rounded-full font-bold">0</span>
+                    </button>
+                    <button onclick="cambiarTab('prof-tienda')" id="tab-prof-tienda" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-store"></i><span>Tienda</span>
+                    </button>
+                    <button onclick="cambiarTab('dashboard')" id="tab-dashboard" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-trophy"></i><span>Ranking</span>
+                    </button>
+                `;
+                actualizarSelectoresCursoProfesor();
+                actualizarContadorPendientes();
+                cambiarTab('prof-cursos');
+            }
+            else if (rol === 'alumno') {
+                const alumno = estado.alumnos.find(a => a.id === id);
+                document.getElementById('role-label').innerText = `Alumno: ${alumno ? alumno.nombre : 'Estudiante'}`;
+                navContainer.innerHTML = `
+                    <button onclick="cambiarTab('alumno-tienda')" id="tab-alumno-tienda" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-wallet"></i><span>Tienda y Billetera</span>
+                    </button>
+                    <button onclick="cambiarTab('alumno-mis-canjes')" id="tab-alumno-mis-canjes" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-ticket"></i><span>Mis Cupones</span>
+                    </button>
+                    <button onclick="cambiarTab('dashboard')" id="tab-dashboard" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2">
+                        <i class="fa-solid fa-trophy"></i><span>Ranking</span>
+                    </button>
+                `;
+                actualizarVistaAlumno();
+                cambiarTab('alumno-tienda');
+            }
+            else {
+                document.getElementById('role-label').innerText = "Invitado";
+                navContainer.innerHTML = `
+                    <button onclick="cambiarTab('dashboard')" id="tab-dashboard" class="py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2 border-indigo-600 text-indigo-600">
+                        <i class="fa-solid fa-trophy"></i><span>Ver Ranking</span>
+                    </button>
+                `;
+                actualizarSelectoresCursoGlobal();
+                actualizarDashboard();
+                cambiarTab('dashboard');
+            }
+        }
+
+        function cerrarSesion() {
+            usuarioActual = { rol: null, id: null, cursoActivoId: null };
+            document.getElementById('main-nav').classList.add('oculto');
+            document.getElementById('user-badge').classList.add('oculto');
+            document.querySelectorAll('.vistas-app').forEach(v => v.classList.add('oculto'));
+            document.getElementById('vista-login').classList.remove('oculto');
+        }
+
+        function cambiarTab(tab) {
+            document.querySelectorAll('.vistas-app').forEach(v => v.classList.add('oculto'));
+            document.querySelectorAll('#nav-tabs-container button').forEach(t => {
+                t.classList.remove('border-indigo-600', 'text-indigo-600');
+                t.classList.add('border-transparent', 'text-slate-500');
+            });
+
+            const vista = document.getElementById(`vista-${tab}`);
+            if (vista) vista.classList.remove('oculto');
+
+            const navBtn = document.getElementById(`tab-${tab}`);
+            if (navBtn) {
+                navBtn.classList.add('border-indigo-600', 'text-indigo-600');
+                navBtn.classList.remove('border-transparent', 'text-slate-500');
+            }
+
+            if (tab === 'sa-profesores') renderizarTablaSAProfesores();
+            if (tab === 'prof-cursos') renderizarGrillaCursosProf();
+            if (tab === 'prof-credenciales') {
+                actualizarSelectoresCursoProfesor();
+                renderizarTarjetas();
+            }
+            if (tab === 'prof-cajero') actualizarSelectoresCursoProfesor();
+            if (tab === 'prof-tienda') renderizarAdminTienda();
+            if (tab === 'prof-canjes') renderizarTablaCanjesProf();
+            if (tab === 'alumno-tienda') actualizarVistaAlumno();
+            if (tab === 'alumno-mis-canjes') renderizarMisCupones();
+            if (tab === 'dashboard') {
+                actualizarSelectoresCursoGlobal();
+                actualizarDashboard();
+            }
+        }
+
+        // --- 3. VISTA DE DIRECCIÓN (SUPER ADMIN) ---
+
+        function saRegistrarProfesor(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('sa-prof-nombre').value.trim();
+            const usuario = document.getElementById('sa-prof-usuario').value.trim();
+            const clave = document.getElementById('sa-prof-clave').value.trim();
+
+            if (estado.profesores.some(p => p.usuario.toLowerCase() === usuario.toLowerCase())) {
+                return alert("El nombre de usuario ya está registrado por otro profesor.");
+            }
+
+            const nuevoProfesor = {
+                id: 'PROF-' + Date.now(),
+                nombre,
+                usuario,
+                clave
+            };
+
+            estado.profesores.push(nuevoProfesor);
+            guardarDatos();
+            e.target.reset();
+            renderizarTablaSAProfesores();
+            alert(`Profesor "${nombre}" registrado con éxito.`);
+        }
+
+        function renderizarTablaSAProfesores() {
+            const tbody = document.getElementById('tabla-sa-profesores');
+            const conteo = document.getElementById('sa-prof-conteo');
+            if (conteo) conteo.innerText = `${estado.profesores.length} Profesores`;
+            tbody.innerHTML = '';
+
+            if (estado.profesores.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-slate-400">No hay profesores registrados. Registra uno arriba.</td></tr>`;
+                return;
+            }
+
+            estado.profesores.forEach(p => {
+                const cantCursos = estado.cursos.filter(c => c.profesorId === p.id).length;
+                const cantAlumnos = estado.alumnos.filter(a => a.profesorId === p.id).length;
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50/70 transition">
+                        <td class="px-4 py-3 font-mono text-xs text-indigo-700 font-semibold">${p.id}</td>
+                        <td class="px-4 py-3">
+                            <span class="font-bold text-slate-800">${p.nombre}</span>
+                            <span class="block text-[11px] text-slate-400 font-medium">${cantCursos} curso(s), ${cantAlumnos} alumno(s)</span>
+                        </td>
+                        <td class="px-4 py-3 font-mono text-sm text-slate-600">${p.usuario}</td>
+                        <td class="px-4 py-3 font-mono text-sm text-slate-600">${p.clave}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="saEliminarProfesor('${p.id}')" 
+                                class="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto"
+                                title="Eliminar profesor con borrado en cascada">
+                                <i class="fa-solid fa-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // CRÍTICO: Borrado en cascada del profesor
+        function saEliminarProfesor(profesorId) {
+            const prof = estado.profesores.find(p => p.id === profesorId);
+            const profNombre = prof ? prof.nombre : profesorId;
+
+            if (confirm(`¿ELIMINAR AL PROFESOR "${profNombre}"?\n\n¡ATENCIÓN! Se aplicará BORRADO EN CASCADA:\n- Se eliminarán todos sus cursos.\n- Se eliminarán todos sus alumnos y sus saldos.\n- Se eliminará su tienda y compras asociadas.`)) {
+                // 1. Eliminar profesor
+                estado.profesores = estado.profesores.filter(p => p.id !== profesorId);
+                // 2. Eliminar cursos
+                estado.cursos = estado.cursos.filter(c => c.profesorId !== profesorId);
+                // 3. Eliminar alumnos
+                estado.alumnos = estado.alumnos.filter(a => a.profesorId !== profesorId);
+                // 4. Eliminar tienda
+                estado.tienda = estado.tienda.filter(t => t.profesorId !== profesorId);
+                // 5. Eliminar compras
+                estado.compras = estado.compras.filter(c => c.profesorId !== profesorId);
+                // 6. Eliminar metas de cursos que ya no existan
+                estado.metas = estado.metas.filter(m => estado.cursos.some(c => c.id === m.cursoId));
+
+                guardarDatos();
+                renderizarTablaSAProfesores();
+                alert(`Profesor "${profNombre}" y todos sus datos relacionados han sido eliminados.`);
+            }
+        }
+
+        // --- 4. VISTA DE PROFESOR (AISLADA POR ID) ---
+
+        function actualizarSelectoresCursoProfesor() {
+            if (usuarioActual.rol !== 'profesor') return;
+
+            const misCursos = estado.cursos.filter(c => c.profesorId === usuarioActual.id);
+
+            // Selector del registro de alumnos
+            const regSelect = document.getElementById('prof-reg-curso-select');
+            if (regSelect) {
+                regSelect.innerHTML = misCursos.length === 0 ? '<option value="">Sin cursos (Crea uno primero)</option>' : '';
+                misCursos.forEach(c => regSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+            }
+
+            // Selector del filtro de credenciales
+            const filtroCred = document.getElementById('filtro-credenciales-curso');
+            if (filtroCred) {
+                filtroCred.innerHTML = misCursos.length === 0 
+                    ? '<option value="">Sin cursos</option>' 
+                    : '<option value="TODOS">Todos mis cursos</option>';
+                misCursos.forEach(c => filtroCred.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+            }
+
+            // Selector del cajero
+            const cajeroSelect = document.getElementById('cajero-curso-selector');
+            if (cajeroSelect) {
+                cajeroSelect.innerHTML = misCursos.length === 0 ? '<option value="">Sin cursos</option>' : '';
+                misCursos.forEach(c => cajeroSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+            }
+
+            // Selector de canjes
+            const canjesSelect = document.getElementById('canjes-curso-selector');
+            if (canjesSelect) {
+                canjesSelect.innerHTML = '<option value="">Todos los cursos</option>';
+                misCursos.forEach(c => canjesSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+            }
+
+            if (misCursos.length > 0 && !usuarioActual.cursoActivoId) {
+                usuarioActual.cursoActivoId = misCursos[0].id;
+            }
+        }
+
+        // Pestaña "Mis Cursos": Crear curso y grilla para verlos
+        function profCrearCurso(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('prof-nuevo-curso').value.trim();
+            const id = 'CURSO-' + Date.now();
+
+            estado.cursos.push({
+                id,
+                profesorId: usuarioActual.id,
+                nombre
+            });
+
+            guardarDatos();
+            e.target.reset();
+            usuarioActual.cursoActivoId = id;
+            actualizarSelectoresCursoProfesor();
+            renderizarGrillaCursosProf();
+            alert(`Curso "${nombre}" creado con éxito.`);
+        }
+
+        function renderizarGrillaCursosProf() {
+            const grilla = document.getElementById('grilla-mis-cursos');
+            if (!grilla) return;
+            grilla.innerHTML = '';
+
+            const misCursos = estado.cursos.filter(c => c.profesorId === usuarioActual.id);
+
+            if (misCursos.length === 0) {
+                grilla.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400">Aún no has creado cursos. Usa el formulario de arriba para crear tu primer curso.</div>`;
+                return;
+            }
+
+            misCursos.forEach(c => {
+                const cantAlumnos = estado.alumnos.filter(a => a.cursoId === c.id).length;
+                const comprasPend = estado.compras.filter(comp => comp.cursoId === c.id && comp.estado === 'PENDIENTE').length;
+
+                grilla.innerHTML += `
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col justify-between hover:border-indigo-300 transition">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-mono text-xs text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md font-semibold">${c.id}</span>
+                                ${comprasPend > 0 ? `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">${comprasPend} canje(s)</span>` : ''}
+                            </div>
+                            <h4 class="font-bold text-lg text-slate-800 mt-1">${c.nombre}</h4>
+                            <p class="text-xs text-slate-500 mt-1">${cantAlumnos} alumno(s) inscritos</p>
+                        </div>
+                        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-200/60">
+                            <button onclick="profSeleccionarCursoParaAlumnos('${c.id}')" 
+                                class="flex-grow px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-bold transition">
+                                Ver Alumnos
+                            </button>
+                            <button onclick="profEliminarCurso('${c.id}')" 
+                                class="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl text-xs font-bold transition"
+                                title="Eliminar curso con borrado en cascada">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function profSeleccionarCursoParaAlumnos(cursoId) {
+            usuarioActual.cursoActivoId = cursoId;
+            actualizarSelectoresCursoProfesor();
+            const regSelect = document.getElementById('prof-reg-curso-select');
+            if (regSelect) regSelect.value = cursoId;
+            const filtroCred = document.getElementById('filtro-credenciales-curso');
+            if (filtroCred) filtroCred.value = cursoId;
+            cambiarTab('prof-credenciales');
+        }
+
+        // CRÍTICO: Borrado en cascada del curso
+        function profEliminarCurso(cursoId) {
+            const curso = estado.cursos.find(c => c.id === cursoId);
+            const cursoNombre = curso ? curso.nombre : cursoId;
+
+            if (confirm(`¿ELIMINAR EL CURSO "${cursoNombre}"?\n\n¡ATENCIÓN! Se eliminarán en cascada todos los alumnos y compras registrados en este curso.`)) {
+                // 1. Eliminar curso
+                estado.cursos = estado.cursos.filter(c => c.id !== cursoId);
+                // 2. Eliminar alumnos del curso
+                estado.alumnos = estado.alumnos.filter(a => a.cursoId !== cursoId);
+                // 3. Eliminar compras asociadas al curso
+                estado.compras = estado.compras.filter(comp => comp.cursoId !== cursoId);
+                // 4. Eliminar meta asociada
+                estado.metas = estado.metas.filter(m => m.cursoId !== cursoId);
+
+                if (usuarioActual.cursoActivoId === cursoId) {
+                    usuarioActual.cursoActivoId = null;
+                }
+
+                guardarDatos();
+                actualizarSelectoresCursoProfesor();
+                renderizarGrillaCursosProf();
+                alert(`Curso "${cursoNombre}" y sus datos asociados han sido eliminados.`);
+            }
+        }
+
+        // Pestaña "Registro & Credenciales": Registro de Alumnos con QR
+        function profRegistrarAlumno(e) {
+            e.preventDefault();
+            const cursoId = document.getElementById('prof-reg-curso-select').value;
+            const nombre = document.getElementById('prof-reg-nombre').value.trim();
+
+            if (!cursoId) {
+                return alert("Por favor crea o selecciona un curso antes de registrar alumnos.");
+            }
+
+            const nuevoId = 'ALUM-' + Math.floor(1000 + Math.random() * 9000);
+            estado.alumnos.push({
+                id: nuevoId,
+                cursoId,
+                profesorId: usuarioActual.id,
+                nombre,
+                saldo: 0,
+                historico: 0
+            });
+
+            guardarDatos();
+            document.getElementById('prof-reg-nombre').value = '';
+            renderizarTarjetas();
+            alert(`Alumno "${nombre}" registrado con éxito. ID: ${nuevoId}`);
+        }
+
+        function renderizarTarjetas() {
+            const container = document.getElementById('printable-area');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const filtroEl = document.getElementById('filtro-credenciales-curso');
+            const filtroCurso = filtroEl ? filtroEl.value : 'TODOS';
+
+            // Alumnos que pertenezcan al profesor activo
+            let alumnosProf = estado.alumnos.filter(a => a.profesorId === usuarioActual.id);
+            if (filtroCurso && filtroCurso !== 'TODOS') {
+                alumnosProf = alumnosProf.filter(a => a.cursoId === filtroCurso);
+            }
+
+            if (alumnosProf.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400">No hay alumnos en el filtro seleccionado. Registra alumnos arriba.</div>`;
+                return;
+            }
+
+            alumnosProf.forEach(al => {
+                const cursoObj = estado.cursos.find(c => c.id === al.cursoId);
+                const cursoNombre = cursoObj ? cursoObj.nombre : '';
+
+                const wrapper = document.createElement('div');
+                wrapper.id = 'wrapper-card-' + al.id;
+                wrapper.className = "flex flex-col items-center transition-all duration-300";
+
+                const controls = document.createElement('div');
+                controls.className = "w-full max-w-[260px] flex justify-between items-center mb-3 no-print bg-white p-2.5 rounded-xl shadow-sm border border-slate-200";
+                controls.innerHTML = `
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" checked onchange="toggleImpresion('${al.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded">
+                        <span class="text-xs font-bold text-slate-700">Imprimir</span>
+                    </label>
+                    <button onclick="eliminarAlumnoUi('${al.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 rounded hover:bg-red-50 transition">
+                        <i class="fa-solid fa-trash mr-1"></i> Borrar
+                    </button>
+                `;
+
+                const card = document.createElement('div');
+                card.id = 'card-' + al.id;
+                card.className = "bg-gradient-to-b from-indigo-900 to-indigo-600 text-white rounded-2xl p-4 shadow-2xl relative w-full max-w-[260px] mx-auto aspect-[0.63] flex flex-col justify-between overflow-hidden border border-indigo-400/30";
+                card.innerHTML = `
+                    <div class="absolute -top-20 -right-20 w-48 h-48 bg-white opacity-5 rounded-full blur-2xl"></div>
+                    <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-indigo-300 opacity-20 rounded-full blur-2xl"></div>
+                    <div class="flex flex-col z-10 relative h-1/2 justify-between pb-2">
+                        <div class="font-bold tracking-widest text-xs uppercase flex items-center justify-center gap-2 drop-shadow-md bg-white/10 py-2 rounded-xl backdrop-blur-sm border border-white/20">
+                            <i class="fa-solid fa-building-columns text-amber-300"></i> BANCO ESCOLAR
+                        </div>
+                        <div class="flex flex-col items-center text-center mt-auto">
+                            <div class="w-10 h-8 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-500 rounded-md flex flex-col justify-evenly p-1 mb-3 shadow-inner border border-amber-600/50">
+                                <div class="w-full h-px bg-amber-700/40 shadow-sm"></div>
+                                <div class="w-full h-px bg-amber-700/40 shadow-sm"></div>
+                            </div>
+                            <div class="font-bold text-xl uppercase tracking-wide drop-shadow-md leading-tight px-2">${al.nombre}</div>
+                            <div class="text-xs uppercase opacity-80 mt-1">${cursoNombre}</div>
+                            <div class="font-mono text-[10px] tracking-widest opacity-90 mt-2 text-amber-200 bg-black/20 px-3 py-1 rounded-full">${al.id}</div>
+                        </div>
+                    </div>
+                    <div class="z-10 relative bg-white rounded-xl shadow-lg p-3 flex flex-col items-center justify-center mt-3 flex-grow border-b-4 border-indigo-300">
+                        <div id="qr-${al.id}" class="flex items-center justify-center"></div>
+                        <p class="text-[10px] text-center text-indigo-900 mt-2 uppercase font-extrabold tracking-widest">Escanear Credencial</p>
+                    </div>
+                `;
+
+                wrapper.appendChild(controls);
+                wrapper.appendChild(card);
+                container.appendChild(wrapper);
+
+                new QRCode(card.querySelector(`#qr-${al.id}`), {
+                    text: al.id,
+                    width: 160,
+                    height: 160,
+                    colorDark: "#312e81",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            });
+        }
+
+        function toggleImpresion(id, isChecked) {
+            const card = document.getElementById('card-' + id);
+            if (!card) return;
+            if (isChecked) card.classList.remove('no-print', 'opacity-30', 'grayscale');
+            else card.classList.add('no-print', 'opacity-30', 'grayscale');
+        }
+
+        function seleccionarTodasCredenciales(marcar) {
+            document.querySelectorAll('#printable-area input[type="checkbox"]').forEach(cb => {
+                cb.checked = marcar;
+                const id = cb.getAttribute('onchange').match(/'([^']+)'/)[1];
+                toggleImpresion(id, marcar);
+            });
+        }
+
+        function eliminarAlumnoUi(id) {
+            const al = estado.alumnos.find(a => a.id === id);
+            if (confirm(`¿Eliminar al alumno "${al ? al.nombre : id}" y sus compras?`)) {
+                estado.alumnos = estado.alumnos.filter(a => a.id !== id);
+                estado.compras = estado.compras.filter(c => c.alumnoId !== id);
+                guardarDatos();
+                renderizarTarjetas();
+            }
+        }
+
+        // --- ESCÁNER Y CAJERO ---
+        function abrirEscanerGlobal(contexto) {
+            contextoEscaner = contexto;
+            document.getElementById('modal-escaner').classList.remove('oculto');
+            document.getElementById('titulo-escaner').innerText = contexto === 'login' ? 'Escanear Credencial Alumno' : 'Escanear Alumno para Cajero';
+
+            // La ID manual SOLO es visible para el profesor en cajero, no para el alumno
+            const contenedorManual = document.getElementById('contenedor-id-manual');
+            if (contexto === 'login') {
+                contenedorManual.classList.add('oculto');
+            } else {
+                contenedorManual.classList.remove('oculto');
+            }
+
+            scannerGlobal = new Html5Qrcode("reader");
+            scannerGlobal.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                (decodedText) => {
+                    cerrarEscanerGlobal();
+                    procesarID(decodedText);
+                },
+                () => { }
+            ).catch(() => {
+                alert("No se pudo iniciar la cámara web o móvil. Revisa los permisos.");
+            });
+        }
+
+        function cerrarEscanerGlobal() {
+            document.getElementById('modal-escaner').classList.add('oculto');
+            if (scannerGlobal) {
+                scannerGlobal.stop().then(() => scannerGlobal.clear()).catch(e => console.error(e));
+            }
+        }
+
+        function procesarEscaneoManual() {
+            const id = document.getElementById('manual-id-global').value.trim();
+            cerrarEscanerGlobal();
+            procesarID(id);
+        }
+
+        let alumnoCajeroActual = null;
+        function procesarID(id) {
+            const alumno = estado.alumnos.find(a => a.id.toUpperCase() === id.toUpperCase());
+            if (!alumno) {
+                return alert("Credencial QR o ID no encontrada en la base de datos.");
+            }
+
+            if (contextoEscaner === 'login') {
+                setUsuario('alumno', alumno.id);
+            } else if (contextoEscaner === 'cajero') {
+                // Validación estricta por profesorId
+                if (alumno.profesorId !== usuarioActual.id) {
+                    return alert("Este alumno pertenece a otro profesor. No tienes permisos para operar en su cuenta.");
+                }
+
+                const cursoCajero = document.getElementById('cajero-curso-selector').value;
+                if (cursoCajero && alumno.cursoId !== cursoCajero) {
+                    if (!confirm(`El alumno pertenece a otro curso. ¿Deseas operar con él igualmente?`)) return;
+                }
+
+                alumnoCajeroActual = alumno;
+                document.getElementById('panel-cajero-alumno').classList.remove('oculto');
+                document.getElementById('cajero-nombre-display').innerText = alumno.nombre;
+                document.getElementById('cajero-id-display').innerText = alumno.id;
+                document.getElementById('cajero-saldo-display').innerText = alumno.saldo + ' pts';
+            }
+        }
+
+        function aplicarPuntos(monto, concepto) {
+            if (!alumnoCajeroActual) return;
+            alumnoCajeroActual.saldo += monto;
+            if (monto > 0) alumnoCajeroActual.historico += monto;
+            guardarDatos();
+            document.getElementById('cajero-saldo-display').innerText = alumnoCajeroActual.saldo + ' pts';
+            if (monto > 0) confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+            alert(`Se han ${monto > 0 ? 'abonado' : 'descontado'} ${Math.abs(monto)} pts a ${alumnoCajeroActual.nombre} (${concepto}).`);
+        }
+
+        function abonoManual() {
+            const m = parseInt(document.getElementById('monto-personalizado').value);
+            if (!isNaN(m) && m !== 0) {
+                aplicarPuntos(m, document.getElementById('concepto-personalizado').value || "Manual");
+                document.getElementById('monto-personalizado').value = '';
+                document.getElementById('concepto-personalizado').value = '';
+            }
+        }
+
+        // --- PROFESOR: TIENDA Y BANDEJA DE CANJES ---
+        function profCrearPremio(e) {
+            e.preventDefault();
+            const titulo = document.getElementById('premio-titulo').value.trim();
+            const costo = parseInt(document.getElementById('premio-costo').value);
+
+            estado.tienda.push({
+                id: Date.now(),
+                profesorId: usuarioActual.id,
+                titulo,
+                costo
+            });
+
+            guardarDatos();
+            e.target.reset();
+            renderizarAdminTienda();
+            alert(`Premio "${titulo}" agregado al catálogo.`);
+        }
+
+        function renderizarAdminTienda() {
+            const lista = document.getElementById('lista-admin-premios');
+            if (!lista) return;
+            lista.innerHTML = '';
+
+            const misPremios = estado.tienda.filter(t => t.profesorId === usuarioActual.id);
+
+            if (misPremios.length === 0) {
+                lista.innerHTML = `<li class="py-4 text-center text-slate-400">No tienes premios creados aún.</li>`;
+                return;
+            }
+
+            misPremios.forEach((p) => {
+                lista.innerHTML += `
+                    <li class="py-3 flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-800">${p.titulo}</span>
+                            <span class="text-sm font-semibold text-emerald-600 ml-2">(${p.costo} pts)</span>
+                        </div>
+                        <button onclick="eliminarPremio(${p.id})" class="text-red-500 hover:text-red-700 p-2 bg-red-50 rounded-lg transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </li>
+                `;
+            });
+        }
+
+        function eliminarPremio(id) {
+            if (confirm("¿Eliminar este premio de tu tienda?")) {
+                estado.tienda = estado.tienda.filter(t => t.id !== id);
+                guardarDatos();
+                renderizarAdminTienda();
+            }
+        }
+
+        function actualizarContadorPendientes() {
+            if (usuarioActual.rol !== 'profesor') return;
+            const pendientes = estado.compras.filter(c => c.estado === 'PENDIENTE' && c.profesorId === usuarioActual.id).length;
+            const el = document.getElementById('contador-canjes-pendientes');
+            if (el) el.innerText = pendientes;
+        }
+
+        function renderizarTablaCanjesProf() {
+            const tbody = document.getElementById('tabla-canjes-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const cursoFiltro = document.getElementById('canjes-curso-selector') ? document.getElementById('canjes-curso-selector').value : '';
+            let misCanjes = estado.compras.filter(c => c.profesorId === usuarioActual.id);
+            if (cursoFiltro) misCanjes = misCanjes.filter(c => c.cursoId === cursoFiltro);
+
+            if (misCanjes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No hay compras registradas en este curso.</td></tr>`;
+                return;
+            }
+
+            misCanjes.sort((a, b) => {
+                if (a.estado === b.estado) return new Date(b.fecha) - new Date(a.fecha);
+                return a.estado === 'PENDIENTE' ? -1 : 1;
+            }).forEach(item => {
+                const esPendiente = item.estado === 'PENDIENTE';
+                const fechaFormat = new Date(item.fecha).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+                const nombreEstudiante = item.alumnoNombre || (estado.alumnos.find(a => a.id === item.alumnoId) || {}).nombre || "Estudiante";
+
+                tbody.innerHTML += `
+                    <tr class="${esPendiente ? "bg-amber-50/60" : "hover:bg-slate-50"}">
+                        <td class="px-4 py-3 text-xs text-slate-500">${fechaFormat}</td>
+                        <td class="px-4 py-3 font-bold text-slate-800">${nombreEstudiante}</td>
+                        <td class="px-4 py-3 font-medium text-slate-700">${item.premioTitulo}</td>
+                        <td class="px-4 py-3 text-right font-extrabold text-indigo-600">${item.costo} pts</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="text-xs px-2.5 py-1 rounded-full font-bold ${esPendiente ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${esPendiente ? 'Pendiente' : 'Validado'}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            ${esPendiente ? `<button onclick="validarEntrega('${item.id}')" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition">Validar</button>` : `<span class="text-xs text-slate-400">Entregado</span>`}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function validarEntrega(compraId) {
+            const compra = estado.compras.find(c => c.id === compraId);
+            if (compra) {
+                compra.estado = 'VALIDADO';
+                guardarDatos();
+                renderizarTablaCanjesProf();
+            }
+        }
+
+        function limpiarCanjesCompletados() {
+            if (confirm("¿Archivar los canjes que ya fueron validados?")) {
+                estado.compras = estado.compras.filter(c => !(c.profesorId === usuarioActual.id && c.estado === 'VALIDADO'));
+                guardarDatos();
+                renderizarTablaCanjesProf();
+            }
+        }
+
+        // --- ALUMNO: VISTAS Y CANJES ---
+        function actualizarVistaAlumno() {
+            const alumno = estado.alumnos.find(a => a.id === usuarioActual.id);
+            if (!alumno) return;
+            const curso = estado.cursos.find(c => c.id === alumno.cursoId);
+
+            document.getElementById('mi-nombre-display').innerText = alumno.nombre;
+            document.getElementById('mi-curso-display').innerText = curso ? curso.nombre : '';
+            document.getElementById('mi-saldo-display').innerText = alumno.saldo + ' pts';
+
+            const catalogo = document.getElementById('catalogo-alumno-tienda');
+            catalogo.innerHTML = '';
+
+            // Solo mostrar la tienda del profesor al que pertenece el alumno
+            const tiendaProf = estado.tienda.filter(t => t.profesorId === alumno.profesorId);
+
+            if (tiendaProf.length === 0) {
+                catalogo.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400">Tu profesor aún no ha publicado premios en la tienda.</div>`;
+                return;
+            }
+
+            tiendaProf.forEach(prod => {
+                const puede = alumno.saldo >= prod.costo;
+                catalogo.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl border ${puede ? 'border-emerald-200 shadow-sm' : 'border-slate-200 opacity-70'} flex flex-col justify-between">
+                        <h4 class="font-bold text-slate-800">${prod.titulo}</h4>
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="font-extrabold ${puede ? 'text-emerald-600' : 'text-slate-400'}">${prod.costo} pts</span>
+                            <button onclick="comprarPremio(${prod.id})" 
+                                class="px-3.5 py-1.5 rounded-xl text-sm font-bold ${puede ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow transition' : 'bg-slate-200 text-slate-500 cursor-not-allowed'}" 
+                                ${!puede ? 'disabled' : ''}>Canjear</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function comprarPremio(prodId) {
+            const alumno = estado.alumnos.find(a => a.id === usuarioActual.id);
+            const prod = estado.tienda.find(p => p.id === prodId);
+            if (!alumno || !prod) return;
+
+            if (confirm(`¿Canjear "${prod.titulo}" por ${prod.costo} pts?`)) {
+                if (alumno.saldo >= prod.costo) {
+                    alumno.saldo -= prod.costo;
+                    estado.compras.push({
+                        id: 'CPN-' + Date.now(),
+                        alumnoId: alumno.id,
+                        alumnoNombre: alumno.nombre,
+                        profesorId: alumno.profesorId,
+                        cursoId: alumno.cursoId,
+                        premioTitulo: prod.titulo,
+                        costo: prod.costo,
+                        fecha: new Date().toISOString(),
+                        estado: 'PENDIENTE'
+                    });
+                    guardarDatos();
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                    alert("¡Cupón generado con éxito! Puedes revisarlo en la pestaña 'Mis Cupones'.");
+                    actualizarVistaAlumno();
+                } else {
+                    alert("Saldo insuficiente para canjear este premio.");
+                }
+            }
+        }
+
+        function renderizarMisCupones() {
+            const lista = document.getElementById('lista-mis-cupones');
+            if (!lista) return;
+            lista.innerHTML = '';
+
+            const mis = estado.compras
+                .filter(c => c.alumnoId === usuarioActual.id)
+                .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+            if (mis.length === 0) {
+                lista.innerHTML = `<div class="p-8 bg-white rounded-2xl border border-slate-200 text-center text-slate-400">Aún no has canjeado cupones. Visita la tienda para canjear tus puntos.</div>`;
+                return;
+            }
+
+            mis.forEach(comp => {
+                const f = new Date(comp.fecha).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+                const esP = comp.estado === 'PENDIENTE';
+                lista.innerHTML += `
+                    <div class="p-4 rounded-2xl border ${esP ? 'bg-amber-50 border-amber-200 shadow-sm' : 'bg-slate-50 border-slate-200 opacity-60'} flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold ${esP ? 'text-amber-800' : 'text-slate-600'}">${comp.premioTitulo}</h4>
+                            <p class="text-xs ${esP ? 'text-amber-600' : 'text-slate-400'} mt-1">${esP ? 'Pendiente de entrega' : 'Entregado'} • ${f}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-mono text-xs text-slate-400 block">${comp.id}</span>
+                            <span class="font-bold text-slate-700">${comp.costo} pts</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- DASHBOARD Y RANKING CON PODIO Y META ---
+        function actualizarSelectoresCursoGlobal() {
+            const selector = document.getElementById('ranking-curso-selector');
+            if (!selector) return;
+
+            let cursosDisponibles = estado.cursos;
+            if (usuarioActual.rol === 'profesor') {
+                cursosDisponibles = estado.cursos.filter(c => c.profesorId === usuarioActual.id);
+            }
+
+            selector.innerHTML = cursosDisponibles.length === 0 ? '<option value="">No hay cursos registrados</option>' : '';
+            cursosDisponibles.forEach(c => selector.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+
+            if (usuarioActual.rol === 'profesor' && usuarioActual.cursoActivoId) {
+                selector.value = usuarioActual.cursoActivoId;
+            }
+        }
+
+        function actualizarDashboard() {
+            const selector = document.getElementById('ranking-curso-selector');
+            const cursoId = selector ? selector.value : null;
+            if (!cursoId) return;
+
+            const btnMeta = document.getElementById('btn-editar-meta');
+            if (btnMeta) {
+                const cursoInfo = estado.cursos.find(c => c.id === cursoId);
+                if (usuarioActual.rol === 'profesor' && cursoInfo && cursoInfo.profesorId === usuarioActual.id) {
+                    btnMeta.classList.remove('oculto');
+                } else {
+                    btnMeta.classList.add('oculto');
+                }
+            }
+
+            const alumnosCurso = estado.alumnos.filter(a => a.cursoId === cursoId);
+            const ranking = [...alumnosCurso].sort((a, b) => b.historico - a.historico);
+            const puntosTotales = alumnosCurso.reduce((acc, curr) => acc + curr.historico, 0);
+
+            let metaObj = estado.metas.find(m => m.cursoId === cursoId);
+            if (!metaObj) {
+                metaObj = { cursoId, puntos: 5000, recompensa: "15 min de recreo extra" };
+            }
+
+            const meta = metaObj.puntos;
+            const porcentaje = Math.min(100, Math.round((puntosTotales / meta) * 100));
+
+            document.getElementById('meta-progreso-bar').style.width = porcentaje + '%';
+            document.getElementById('meta-porcentaje').innerText = porcentaje + '%';
+            document.getElementById('meta-texto-detalle').innerText = `${puntosTotales} / ${meta} pts`;
+            document.getElementById('meta-recompensa-texto').innerText = `Recompensa: ${metaObj.recompensa}`;
+
+            const podioContainer = document.getElementById('podio-container');
+            podioContainer.innerHTML = '';
+
+            const top3 = ranking.slice(0, 3);
+            const ordenVisual = [];
+            if (top3[1]) ordenVisual.push({ al: top3[1], pos: 2, color: 'from-slate-300 to-slate-400', height: 'h-36', shadow: 'shadow-slate-400/50', icon: '🥈' });
+            if (top3[0]) ordenVisual.push({ al: top3[0], pos: 1, color: 'from-amber-300 to-yellow-500', height: 'h-48', shadow: 'shadow-yellow-500/50', icon: '👑', isFirst: true });
+            if (top3[2]) ordenVisual.push({ al: top3[2], pos: 3, color: 'from-orange-300 to-red-400', height: 'h-28', shadow: 'shadow-orange-500/50', icon: '🥉' });
+
+            ordenVisual.forEach(item => {
+                const inicial = item.al.nombre.charAt(0).toUpperCase();
+                podioContainer.innerHTML += `
+                    <div class="flex flex-col items-center justify-end w-28 md:w-36 ${item.isFirst ? 'z-10' : 'z-0 -mx-4'}">
+                        <div class="text-3xl mb-2 ${item.isFirst ? 'animate-bounce' : ''}">${item.icon}</div>
+                        <div class="w-12 h-12 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center font-black text-xl text-slate-700 shadow-md border-4 ${item.isFirst ? 'border-yellow-400' : 'border-slate-100'} z-20 -mb-6">${inicial}</div>
+                        <div class="w-full bg-gradient-to-t ${item.color} ${item.height} rounded-t-2xl shadow-xl ${item.shadow} flex flex-col items-center justify-end pb-4 pt-8 text-center px-1">
+                            <span class="font-bold text-white text-xs md:text-sm leading-tight truncate w-full px-2 drop-shadow-md">${item.al.nombre}</span>
+                            <span class="font-black text-white/90 mt-1 drop-shadow">${item.al.historico} pts</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const tablaBody = document.getElementById('tabla-ranking-body');
+            tablaBody.innerHTML = '';
+            const colores = ['bg-blue-100 text-blue-600', 'bg-emerald-100 text-emerald-600', 'bg-purple-100 text-purple-600', 'bg-rose-100 text-rose-600', 'bg-indigo-100 text-indigo-600'];
+
+            if (ranking.length === 0) {
+                tablaBody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">No hay estudiantes con actividad en este curso.</td></tr>`;
+                return;
+            }
+
+            ranking.forEach((al, i) => {
+                const inicial = al.nombre.charAt(0).toUpperCase();
+                const col = colores[i % colores.length];
+                let pInfo = `<span class="font-bold text-slate-400">#${i + 1}</span>`;
+                if (i === 0) pInfo = `<i class="fa-solid fa-trophy text-yellow-400 text-lg"></i>`;
+                else if (i === 1) pInfo = `<i class="fa-solid fa-medal text-slate-400 text-lg"></i>`;
+                else if (i === 2) pInfo = `<i class="fa-solid fa-medal text-orange-400 text-lg"></i>`;
+
+                tablaBody.innerHTML += `
+                    <tr class="hover:bg-slate-50/80 transition group">
+                        <td class="px-6 py-4 whitespace-nowrap text-center w-16">${pInfo}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full ${col} flex items-center justify-center font-bold text-xs shadow-sm">${inicial}</div>
+                                <span class="font-semibold text-slate-700 group-hover:text-indigo-600 transition">${al.nombre}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200">
+                                <i class="fa-solid fa-wallet text-slate-400"></i> ${al.saldo} pts
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 text-base">${al.historico} pts</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editarMeta() {
+            const selector = document.getElementById('ranking-curso-selector');
+            const cursoId = selector ? selector.value : null;
+            if (!cursoId) return;
+
+            let metaObj = estado.metas.find(m => m.cursoId === cursoId);
+            if (!metaObj) {
+                metaObj = { cursoId, puntos: 5000, recompensa: "15 min de recreo extra" };
+                estado.metas.push(metaObj);
+            }
+
+            const nr = prompt("Ingresa el premio o recompensa para este curso:", metaObj.recompensa);
+            if (nr === null) return;
+            const np = prompt(`¿Cuántos puntos en total debe juntar el curso para ganar "${nr}"?`, metaObj.puntos);
+            if (np === null) return;
+
+            const pts = parseInt(np);
+            if (!isNaN(pts) && pts > 0) {
+                metaObj.recompensa = nr;
+                metaObj.puntos = pts;
+                guardarDatos();
+                actualizarDashboard();
+            } else {
+                alert("La cantidad de puntos no es válida.");
+            }
+        }
+
+        window.onload = cargarDatos;
+    </script>
+</body>
+
+</html>
