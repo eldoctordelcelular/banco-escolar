@@ -29,6 +29,19 @@
                 left: 0;
                 top: 0;
                 width: 100%;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 20px !important;
+                padding: 10px !important;
+                justify-content: flex-start !important;
+            }
+
+            .tarjeta-credencial {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                margin: 0 15px 20px 0 !important;
             }
 
             .no-print {
@@ -38,6 +51,50 @@
 
         .oculto {
             display: none !important;
+        }
+
+        /* Dimensiones fijas estrictas y Flexbox para credenciales uniformes */
+        .tarjeta-credencial {
+            width: 260px !important;
+            height: 420px !important;
+            min-width: 260px !important;
+            max-width: 260px !important;
+            min-height: 420px !important;
+            max-height: 420px !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+            position: relative !important;
+        }
+
+        /* Alto reservado para exactamente 2 líneas de texto: no desplaza el QR ni altera el tamaño */
+        .nombre-alumno-credencial {
+            min-height: 2.75rem !important;
+            height: 2.75rem !important;
+            max-height: 2.75rem !important;
+            line-height: 1.35 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            overflow: hidden !important;
+            width: 100% !important;
+        }
+
+        /* Contenedor rígido para el código QR */
+        .qr-contenedor-credencial {
+            height: 195px !important;
+            min-height: 195px !important;
+            max-height: 195px !important;
+            width: 100% !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
     </style>
 </head>
@@ -73,7 +130,8 @@
         <!-- 1. PANTALLA DE INICIO / LOGIN DE 3 NIVELES -->
         <section id="vista-login" class="flex flex-col items-center justify-center min-h-[65vh] space-y-6">
             <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center max-w-md w-full">
-                <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl mx-auto flex items-center justify-center mb-4 shadow-inner">
+                <div
+                    class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl mx-auto flex items-center justify-center mb-4 shadow-inner">
                     <i class="fa-solid fa-building-columns text-4xl"></i>
                 </div>
                 <h2 class="text-2xl font-black text-slate-800 mb-1">Banco Escolar QR</h2>
@@ -116,7 +174,8 @@
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
                 <div class="text-center mb-6">
-                    <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-2">
+                    <div
+                        class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl mx-auto flex items-center justify-center mb-2">
                         <i class="fa-solid fa-chalkboard-user text-xl"></i>
                     </div>
                     <h3 class="font-bold text-xl text-slate-800">Acceso Docente</h3>
@@ -124,9 +183,11 @@
                 </div>
                 <form onsubmit="procesarLoginProfesor(event)" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Usuario</label>
+                        <label
+                            class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Usuario</label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <span
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                 <i class="fa-solid fa-user text-sm"></i>
                             </span>
                             <input type="text" id="login-prof-usuario" placeholder="Ej. jperez" required
@@ -134,9 +195,11 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Clave</label>
+                        <label
+                            class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Clave</label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <span
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                 <i class="fa-solid fa-lock text-sm"></i>
                             </span>
                             <input type="password" id="login-prof-clave" placeholder="••••••••" required
@@ -176,6 +239,66 @@
             </div>
         </div>
 
+        <!-- MODAL CONFIRMACIÓN ABONO MASIVO DE PUNTOS -->
+        <div id="modal-confirmar-abono-masivo"
+            class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 oculto">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
+                <button onclick="cerrarModalConfirmarAbono()"
+                    class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div class="text-center mb-5">
+                    <div id="modal-confirmar-icono"
+                        class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl mx-auto flex items-center justify-center mb-3 shadow-inner">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                    </div>
+                    <h3 class="font-extrabold text-xl text-slate-800" id="modal-confirmar-titulo">¿Confirmar Abono
+                        Masivo?</h3>
+                    <p class="text-xs text-slate-500 mt-1" id="modal-confirmar-subtitulo">Verifica los detalles antes de
+                        aplicar la operación en Firebase</p>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 space-y-2.5 text-xs mb-5">
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                        <span class="text-slate-500 font-semibold">Modalidad:</span>
+                        <span id="confirm-modal-modalidad" class="font-bold text-slate-800">Todo el Curso</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                        <span class="text-slate-500 font-semibold">Destinatarios:</span>
+                        <span id="confirm-modal-destinatarios" class="font-bold text-indigo-700">0 estudiantes</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                        <span class="text-slate-500 font-semibold">Puntos a aplicar:</span>
+                        <span id="confirm-modal-puntos" class="font-extrabold text-emerald-600 text-sm">+0 pts
+                            c/u</span>
+                    </div>
+                    <div class="flex justify-between items-start py-1">
+                        <span class="text-slate-500 font-semibold">Concepto:</span>
+                        <span id="confirm-modal-concepto"
+                            class="font-medium text-slate-700 text-right max-w-[200px] break-words">General</span>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-amber-50 border border-amber-200 text-amber-800 text-[11px] p-3 rounded-xl flex items-start gap-2 mb-5">
+                    <i class="fa-solid fa-shield-halved text-amber-600 text-xs mt-0.5"></i>
+                    <span><strong>Seguridad:</strong> Esta acción sumará los puntos de forma acumulativa al saldo actual
+                        existente sin reiniciar los puntajes previos de los alumnos.</span>
+                </div>
+
+                <div class="flex gap-2.5">
+                    <button type="button" onclick="cerrarModalConfirmarAbono()"
+                        class="w-1/2 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition">
+                        Cancelar
+                    </button>
+                    <button type="button" id="btn-confirmar-ejecutar-abono" onclick="ejecutarAbonoConfirmado()"
+                        class="w-1/2 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check"></i> Sí, Aplicar Abono
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 2. VISTA DE DIRECCIÓN (SUPER ADMIN) -->
         <section id="vista-sa-profesores" class="oculto space-y-6 vistas-app">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
@@ -185,7 +308,8 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-lg text-slate-800">Registrar Nuevo Profesor</h3>
-                        <p class="text-xs text-slate-500">Crea credenciales de acceso para los docentes de la institución</p>
+                        <p class="text-xs text-slate-500">Crea credenciales de acceso para los docentes de la
+                            institución</p>
                     </div>
                 </div>
                 <form onsubmit="saRegistrarProfesor(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -220,11 +344,14 @@
                         <h3 class="font-bold text-slate-800">Profesores Registrados</h3>
                         <p class="text-xs text-slate-500">Gestión de cuentas y borrado con cascada multi-tabla</p>
                     </div>
-                    <span id="sa-prof-conteo" class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">0 Profesores</span>
+                    <span id="sa-prof-conteo"
+                        class="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">0
+                        Profesores</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                        <thead
+                            class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
                             <tr>
                                 <th class="px-4 py-3">ID</th>
                                 <th class="px-4 py-3">Nombre</th>
@@ -261,11 +388,63 @@
                 </form>
             </div>
 
+            <!-- Carga Masiva de Alumnos vía Hoja de Cálculo / CSV -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center shadow-inner">
+                            <i class="fa-solid fa-file-csv text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-800">Carga Masiva de Alumnos (CSV / Excel)</h3>
+                            <p class="text-xs text-slate-500">Formato de 2 celdas por fila: <code
+                                    class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">ID_ALUMNO</code>
+                                y <code
+                                    class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">NOMBRE</code>
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="descargarPlantillaCSV()"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-2 self-start sm:self-auto border border-slate-200 active:scale-95">
+                        <i class="fa-solid fa-file-arrow-down text-indigo-600 text-sm"></i> Descargar Plantilla
+                        (ID_ALUMNO, NOMBRE)
+                    </button>
+                </div>
+
+                <!-- Alerta visual informativa dinámica -->
+                <div id="alerta-importacion-csv" class="oculto mb-4 p-4 rounded-xl text-sm flex items-start gap-3">
+                </div>
+
+                <form onsubmit="procesarImportacionCSV(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Curso de Destino</label>
+                        <select id="csv-curso-destino" required
+                            class="w-full px-3 py-2.5 border rounded-xl text-sm font-semibold text-indigo-700 bg-indigo-50/50">
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Seleccionar Archivo CSV
+                            (.csv)</label>
+                        <input type="file" id="input-archivo-csv" accept=".csv,text/csv" required
+                            class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border rounded-xl p-1.5 bg-slate-50/50">
+                    </div>
+                    <div>
+                        <button type="submit" id="btn-importar-csv"
+                            class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 shadow transition flex items-center justify-center gap-2 active:scale-[0.99]">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Importar a Firebase
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                 <div class="flex justify-between items-center mb-4">
                     <div>
                         <h3 class="font-bold text-slate-800">Mis Cursos Activos</h3>
-                        <p class="text-xs text-slate-500">Al eliminar un curso se aplicará borrado en cascada (alumnos y compras)</p>
+                        <p class="text-xs text-slate-500">Al eliminar un curso se aplicará borrado en cascada (alumnos y
+                            compras)</p>
                     </div>
                 </div>
                 <div id="grilla-mis-cursos" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -284,7 +463,8 @@
                     </div>
                     <div>
                         <h3 class="font-bold text-lg text-slate-800">Registrar Alumno</h3>
-                        <p class="text-xs text-slate-500">Asigna al estudiante a uno de tus cursos para generar su credencial QR</p>
+                        <p class="text-xs text-slate-500">Asigna al estudiante a uno de tus cursos para generar su
+                            credencial QR</p>
                     </div>
                 </div>
                 <form onsubmit="profRegistrarAlumno(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -296,7 +476,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo del Alumno</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo del
+                            Alumno</label>
                         <input type="text" id="prof-reg-nombre" placeholder="Ej. Camila Morales" required
                             class="w-full px-3 py-2.5 border rounded-xl text-sm">
                     </div>
@@ -311,7 +492,8 @@
 
             <!-- Grilla de Tarjetas Imprimibles de Credenciales -->
             <div class="space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <div
+                    class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
                     <div class="flex items-center gap-2">
                         <label class="text-xs font-bold text-slate-600 uppercase">Filtrar por curso:</label>
                         <select id="filtro-credenciales-curso" onchange="renderizarTarjetas()"
@@ -344,9 +526,10 @@
         <section id="vista-prof-cajero" class="oculto space-y-6 vistas-app">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center">
                 <h2 class="text-xl font-bold text-slate-800 mb-2">Cajero del Docente</h2>
-                <p class="text-xs text-slate-500 mb-4">Selecciona el curso para operar y luego escanea la credencial del alumno</p>
+                <p class="text-xs text-slate-500 mb-4">Selecciona el curso para operar y luego escanea la credencial del
+                    alumno</p>
                 <div class="mb-5 flex justify-center">
-                    <select id="cajero-curso-selector"
+                    <select id="cajero-curso-selector" onchange="onCambioCajeroCurso()"
                         class="px-4 py-2.5 border rounded-xl text-sm font-semibold bg-slate-50 w-full max-w-xs text-indigo-700"></select>
                 </div>
                 <button onclick="abrirEscanerGlobal('cajero')"
@@ -369,7 +552,8 @@
                     </div>
                 </div>
                 <div>
-                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Abono Rápido</span>
+                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Abono
+                        Rápido</span>
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <button onclick="aplicarPuntos(50, 'Tarea')"
                             class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm font-bold hover:bg-emerald-100 transition">
@@ -390,7 +574,8 @@
                     </div>
                 </div>
                 <div>
-                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Abono / Descuento Manual</span>
+                    <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Abono / Descuento
+                        Manual</span>
                     <div class="flex gap-2">
                         <input type="number" id="monto-personalizado" placeholder="Monto (+ ó -)"
                             class="w-32 px-3 py-2 border rounded-xl text-sm">
@@ -403,6 +588,145 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SECCIÓN: ABONO MASIVO DE PUNTOS -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                <div
+                    class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner border border-amber-100">
+                            <i class="fa-solid fa-coins text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-extrabold text-lg text-slate-800">Abono Masivo de Puntos</h3>
+                                <span
+                                    class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Gestión
+                                    Colectiva</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Bonifica o descuenta puntos a todos los alumnos de
+                                un curso o mediante una lista CSV</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="descargarPlantillaAbonoCSV()"
+                        class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-2 self-start sm:self-auto border border-slate-200 active:scale-95">
+                        <i class="fa-solid fa-file-arrow-down text-indigo-600 text-sm"></i> Descargar Plantilla CSV
+                    </button>
+                </div>
+
+                <!-- Banner dinámico de Alerta / Progreso / Éxito -->
+                <div id="alerta-abono-masivo"
+                    class="oculto p-4 rounded-xl text-sm flex items-start gap-3 transition-all duration-200"></div>
+
+                <!-- Selector de Modalidad: A todo el curso VS Por archivo CSV -->
+                <div class="flex bg-slate-100 p-1.5 rounded-xl gap-1.5 text-xs font-bold">
+                    <button type="button" id="tab-btn-abono-curso" onclick="cambiarModoAbonoMasivo('curso')"
+                        class="flex-1 py-2.5 px-4 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Abonar a Todo el Curso</span>
+                    </button>
+                    <button type="button" id="tab-btn-abono-archivo" onclick="cambiarModoAbonoMasivo('archivo')"
+                        class="flex-1 py-2.5 px-4 rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>Abonar mediante Archivo (CSV)</span>
+                    </button>
+                </div>
+
+                <!-- MODALIDAD A: ABONAR A TODO EL CURSO -->
+                <div id="panel-abono-curso" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Curso Destino
+                            </label>
+                            <select id="abono-masivo-curso-select" onchange="actualizarInfoCursoMasivo()"
+                                class="w-full px-3.5 py-2.5 border rounded-xl text-sm font-semibold text-indigo-700 bg-indigo-50/40 border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </select>
+                            <span id="abono-masivo-info-alumnos" class="text-[11px] text-slate-500 mt-1 block">
+                                <i class="fa-solid fa-user-group text-slate-400 mr-1"></i> Cargando alumnos...
+                            </span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Cantidad de Puntos (+ ó -)
+                            </label>
+                            <input type="number" id="abono-masivo-puntos" placeholder="Ej. 50 (o -20)" step="1"
+                                class="w-full px-3.5 py-2.5 border rounded-xl text-sm font-bold text-slate-800 border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <!-- Botones rápidos de preset -->
+                            <div class="flex gap-1.5 mt-1.5 flex-wrap">
+                                <button type="button" onclick="setPresetPuntosMasivos(20)"
+                                    class="px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded text-[11px] font-bold border border-emerald-200">+20</button>
+                                <button type="button" onclick="setPresetPuntosMasivos(50)"
+                                    class="px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded text-[11px] font-bold border border-emerald-200">+50</button>
+                                <button type="button" onclick="setPresetPuntosMasivos(100)"
+                                    class="px-2 py-0.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded text-[11px] font-bold border border-emerald-200">+100</button>
+                                <button type="button" onclick="setPresetPuntosMasivos(-20)"
+                                    class="px-2 py-0.5 bg-red-50 text-red-700 hover:bg-red-100 rounded text-[11px] font-bold border border-red-200">-20</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Motivo o Concepto (Opcional)
+                            </label>
+                            <input type="text" id="abono-masivo-concepto" placeholder="Ej. Premio asistencia general"
+                                class="w-full px-3.5 py-2.5 border rounded-xl text-sm border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <span class="text-[11px] text-slate-400 mt-1 block">Ej. "Día del estudiante", "Desafío de
+                                curso"</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex justify-end">
+                        <button type="button" onclick="iniciarAbonoCursoCompleto()"
+                            class="w-full sm:w-auto px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 shadow-md transition flex items-center justify-center gap-2 active:scale-[0.99]">
+                            <i class="fa-solid fa-circle-check text-base"></i> Abonar a Todo el Curso
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MODALIDAD B: ABONAR MEDIANTE ARCHIVO CSV -->
+                <div id="panel-abono-archivo" class="space-y-4 oculto">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-circle-info text-indigo-600 text-base mt-0.5"></i>
+                            <div class="text-xs text-slate-600 space-y-1">
+                                <p class="font-bold text-slate-800">Formato del archivo CSV:</p>
+                                <p>El archivo debe incluir las columnas: <code
+                                        class="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-indigo-700 font-bold">ID_Alumno,Puntos_Abono</code>
+                                </p>
+                                <p class="text-slate-500">Permite bonificar cantidades diferenciadas a una lista
+                                    específica de estudiantes (ej. ALUM-1001, 50). La primera fila se interpreta como
+                                    encabezado.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Seleccionar Archivo CSV (.csv)
+                            </label>
+                            <input type="file" id="input-archivo-abono-csv" accept=".csv,text/csv"
+                                class="w-full text-xs text-slate-600 file:mr-3 file:py-2.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border rounded-xl p-1.5 bg-slate-50/50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Motivo o Concepto General (Opcional)
+                            </label>
+                            <input type="text" id="abono-archivo-concepto"
+                                placeholder="Ej. Bonificación diferenciada de prueba"
+                                class="w-full px-3.5 py-2.5 border rounded-xl text-sm border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex justify-end">
+                        <button type="button" onclick="iniciarAbonoPorArchivo()"
+                            class="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-md transition flex items-center justify-center gap-2 active:scale-[0.99]">
+                            <i class="fa-solid fa-file-import text-base"></i> Abonar mediante Archivo
+                        </button>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- 6. VISTA PROFESOR: BANDEJA DE CANJES -->
@@ -410,7 +734,8 @@
             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">Bandeja de Canjes</h2>
-                    <p class="text-sm text-slate-500">Supervisa las solicitudes de premios canjeados por tus alumnos.</p>
+                    <p class="text-sm text-slate-500">Supervisa las solicitudes de premios canjeados por tus alumnos.
+                    </p>
                 </div>
                 <button onclick="limpiarCanjesCompletados()"
                     class="px-4 py-2 text-xs font-bold bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700 transition self-start sm:self-auto">
@@ -425,7 +750,8 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                        <thead
+                            class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
                             <tr>
                                 <th class="px-4 py-3">Fecha y Hora</th>
                                 <th class="px-4 py-3">Alumno</th>
@@ -454,8 +780,8 @@
                     </div>
                 </div>
                 <form onsubmit="profCrearPremio(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <input type="text" id="premio-titulo" placeholder="Nombre (ej. +0.5 Décimas para la prueba)" required
-                        class="md:col-span-2 px-3 py-2.5 border rounded-xl text-sm">
+                    <input type="text" id="premio-titulo" placeholder="Nombre (ej. +0.5 Décimas para la prueba)"
+                        required class="md:col-span-2 px-3 py-2.5 border rounded-xl text-sm">
                     <input type="number" id="premio-costo" placeholder="Costo en puntos" min="1" required
                         class="px-3 py-2.5 border rounded-xl text-sm">
                     <button type="submit"
@@ -472,14 +798,16 @@
 
         <!-- 8. VISTA ALUMNO: TIENDA Y BILLETERA -->
         <section id="vista-alumno-tienda" class="oculto space-y-6 vistas-app">
-            <div class="bg-gradient-to-r from-emerald-600 to-teal-800 rounded-3xl p-6 text-white shadow-xl flex justify-between items-center">
+            <div
+                class="bg-gradient-to-r from-emerald-600 to-teal-800 rounded-3xl p-6 text-white shadow-xl flex justify-between items-center">
                 <div>
                     <span class="text-xs uppercase tracking-wider text-emerald-200 font-semibold"
                         id="mi-curso-display">Curso</span>
                     <h2 id="mi-nombre-display" class="text-2xl md:text-3xl font-black mt-1">Nombre Alumno</h2>
                 </div>
                 <div class="text-right">
-                    <span class="text-xs uppercase tracking-wider text-emerald-200 font-semibold">Saldo Disponible</span>
+                    <span class="text-xs uppercase tracking-wider text-emerald-200 font-semibold">Saldo
+                        Disponible</span>
                     <p id="mi-saldo-display" class="text-3xl md:text-4xl font-black text-amber-300">0 pts</p>
                 </div>
             </div>
@@ -491,24 +819,30 @@
         <section id="vista-alumno-mis-canjes" class="oculto space-y-6 vistas-app">
             <div>
                 <h2 class="text-xl font-bold text-slate-800">Mis Cupones</h2>
-                <p class="text-xs text-slate-500">Muestra estos cupones a tu profesor para que valide la entrega del premio.</p>
+                <p class="text-xs text-slate-500">Muestra estos cupones a tu profesor para que valide la entrega del
+                    premio.</p>
             </div>
             <div id="lista-mis-cupones" class="space-y-3"></div>
         </section>
 
         <!-- 10. VISTA DASHBOARD & RANKING -->
         <section id="vista-dashboard" class="oculto space-y-8 vistas-app">
-            <div class="flex flex-col md:flex-row gap-4 items-center mb-6 justify-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
-                <span class="font-bold text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-2"></i>Ver Ranking del Curso:</span>
+            <div
+                class="flex flex-col md:flex-row gap-4 items-center mb-6 justify-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <span class="font-bold text-slate-700"><i class="fa-solid fa-filter text-indigo-500 mr-2"></i>Ver
+                    Ranking del Curso:</span>
                 <select id="ranking-curso-selector" onchange="actualizarDashboard()"
                     class="px-4 py-2 border rounded-xl font-bold text-indigo-700 bg-indigo-50 min-w-[250px]"></select>
             </div>
 
-            <div class="relative bg-gradient-to-r from-violet-900 via-indigo-800 to-purple-900 text-white p-6 rounded-3xl shadow-xl overflow-hidden border border-indigo-500/30">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
+            <div
+                class="relative bg-gradient-to-r from-violet-900 via-indigo-800 to-purple-900 text-white p-6 rounded-3xl shadow-xl overflow-hidden border border-indigo-500/30">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl">
+                </div>
                 <div class="flex justify-between items-end mb-3 relative z-10">
                     <div>
-                        <span class="text-indigo-200 text-xs font-bold uppercase tracking-wider">Desafío del Curso</span>
+                        <span class="text-indigo-200 text-xs font-bold uppercase tracking-wider">Desafío del
+                            Curso</span>
                         <h3 class="font-black text-2xl flex items-center gap-2 mt-1">
                             <i class="fa-solid fa-rocket text-amber-400 animate-pulse"></i> Meta Colectiva
                             <button onclick="editarMeta()" id="btn-editar-meta"
@@ -521,7 +855,8 @@
                             class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">0%</span>
                     </div>
                 </div>
-                <div class="relative w-full bg-indigo-950/50 rounded-full h-6 p-1 backdrop-blur-sm border border-indigo-900/50 z-10">
+                <div
+                    class="relative w-full bg-indigo-950/50 rounded-full h-6 p-1 backdrop-blur-sm border border-indigo-900/50 z-10">
                     <div id="meta-progreso-bar"
                         class="bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(251,191,36,0.5)] flex justify-end items-center pr-2"
                         style="width: 0%">
@@ -529,7 +864,8 @@
                     </div>
                 </div>
                 <div class="flex justify-between items-center mt-2 relative z-10">
-                    <span class="text-xs text-indigo-300 font-medium" id="meta-recompensa-texto">Recompensa: 15 min de recreo extra</span>
+                    <span class="text-xs text-indigo-300 font-medium" id="meta-recompensa-texto">Recompensa: 15 min de
+                        recreo extra</span>
                     <span class="text-xs font-bold text-amber-200 bg-black/20 px-3 py-1 rounded-full"
                         id="meta-texto-detalle">0 / 5000 pts</span>
                 </div>
@@ -589,10 +925,11 @@
         let estado = {
             profesores: [], // [{ id, nombre, usuario, clave }]
             cursos: [],     // [{ id, profesorId, nombre }]
-            alumnos: [],    // [{ id, cursoId, profesorId, nombre, saldo, historico }]
+            alumnos: [],    // [{ id, cursoId, profesorId, nombre, saldo, historico, historial }]
             tienda: [],     // [{ id, profesorId, titulo, costo }]
             compras: [],    // [{ id, alumnoId, alumnoNombre, profesorId, cursoId, premioTitulo, costo, fecha, estado }]
-            metas: []       // [{ cursoId, recompensa, puntos }]
+            metas: [],      // [{ cursoId, recompensa, puntos }]
+            transacciones: [] // [{ id, tipo, profesorId, cursoId, concepto, ... fecha }]
         };
 
         let usuarioActual = { rol: null, id: null, cursoActivoId: null };
@@ -611,6 +948,7 @@
                     if (!estado.tienda) estado.tienda = [];
                     if (!estado.compras) estado.compras = [];
                     if (!estado.metas) estado.metas = [];
+                    if (!estado.transacciones) estado.transacciones = [];
 
                     // Actualizar la vista activa si el usuario está logueado
                     if (usuarioActual.rol === 'superadmin' || usuarioActual.rol === 'direccion') {
@@ -622,6 +960,7 @@
                         renderizarTarjetas();
                         renderizarAdminTienda();
                         renderizarTablaCanjesProf();
+                        actualizarInfoCursoMasivo();
                     } else if (usuarioActual.rol === 'alumno') {
                         actualizarVistaAlumno();
                         renderizarMisCupones();
@@ -631,7 +970,7 @@
                     }
                 } else {
                     // Si la base de datos está vacía, inicializar arreglos
-                    estado = { profesores: [], cursos: [], alumnos: [], tienda: [], compras: [], metas: [] };
+                    estado = { profesores: [], cursos: [], alumnos: [], tienda: [], compras: [], metas: [], transacciones: [] };
                     guardarDatos();
                 }
             });
@@ -639,9 +978,10 @@
 
         // Guardado en Firebase Realtime Database
         function guardarDatos() {
-            database.ref(DB_REF).set(estado).catch(error => {
+            return database.ref(DB_REF).set(estado).catch(error => {
                 console.error("Error al guardar en Firebase:", error);
                 alert("Error de conexión al guardar los datos.");
+                throw error;
             });
         }
 
@@ -799,12 +1139,18 @@
             }
 
             if (tab === 'sa-profesores') renderizarTablaSAProfesores();
-            if (tab === 'prof-cursos') renderizarGrillaCursosProf();
+            if (tab === 'prof-cursos') {
+                actualizarSelectoresCursoProfesor();
+                renderizarGrillaCursosProf();
+            }
             if (tab === 'prof-credenciales') {
                 actualizarSelectoresCursoProfesor();
                 renderizarTarjetas();
             }
-            if (tab === 'prof-cajero') actualizarSelectoresCursoProfesor();
+            if (tab === 'prof-cajero') {
+                actualizarSelectoresCursoProfesor();
+                actualizarInfoCursoMasivo();
+            }
             if (tab === 'prof-tienda') renderizarAdminTienda();
             if (tab === 'prof-canjes') renderizarTablaCanjesProf();
             if (tab === 'alumno-tienda') actualizarVistaAlumno();
@@ -916,11 +1262,19 @@
                 misCursos.forEach(c => regSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
             }
 
+            // Selector del curso para Carga Masiva CSV
+            const csvSelect = document.getElementById('csv-curso-destino');
+            if (csvSelect) {
+                csvSelect.innerHTML = misCursos.length === 0 ? '<option value="">Sin cursos (Crea uno primero)</option>' : '';
+                misCursos.forEach(c => csvSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+                if (usuarioActual.cursoActivoId) csvSelect.value = usuarioActual.cursoActivoId;
+            }
+
             // Selector del filtro de credenciales
             const filtroCred = document.getElementById('filtro-credenciales-curso');
             if (filtroCred) {
-                filtroCred.innerHTML = misCursos.length === 0 
-                    ? '<option value="">Sin cursos</option>' 
+                filtroCred.innerHTML = misCursos.length === 0
+                    ? '<option value="">Sin cursos</option>'
                     : '<option value="TODOS">Todos mis cursos</option>';
                 misCursos.forEach(c => filtroCred.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
             }
@@ -930,6 +1284,22 @@
             if (cajeroSelect) {
                 cajeroSelect.innerHTML = misCursos.length === 0 ? '<option value="">Sin cursos</option>' : '';
                 misCursos.forEach(c => cajeroSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+            }
+
+            // Selector del abono masivo de puntos
+            const abonoMasivoSelect = document.getElementById('abono-masivo-curso-select');
+            if (abonoMasivoSelect) {
+                if (misCursos.length === 0) {
+                    abonoMasivoSelect.innerHTML = '<option value="">Sin cursos</option>';
+                } else {
+                    let opts = '<option value="TODOS">★ Todos mis cursos (' + misCursos.length + ' cursos)</option>';
+                    misCursos.forEach(c => opts += `<option value="${c.id}">${c.nombre}</option>`);
+                    abonoMasivoSelect.innerHTML = opts;
+                    if (cajeroSelect && cajeroSelect.value) {
+                        abonoMasivoSelect.value = cajeroSelect.value;
+                    }
+                }
+                actualizarInfoCursoMasivo();
             }
 
             // Selector de canjes
@@ -942,6 +1312,194 @@
             if (misCursos.length > 0 && !usuarioActual.cursoActivoId) {
                 usuarioActual.cursoActivoId = misCursos[0].id;
             }
+        }
+
+        // --- FUNCIONES DE CARGA MASIVA MEDIANTE CSV ---
+
+        // Genera y descarga automáticamente el archivo Plantilla_Alumnos.csv con UTF-8 BOM (2 celdas: ID_ALUMNO;NOMBRE)
+        function descargarPlantillaCSV() {
+            const contenidoCSV = "\uFEFFID_ALUMNO;NOMBRE\r\nALUM-2901;Amalia Aguayo\r\nALUM-2902;Mateo González\r\nALUM-2903;Sofía Morales\r\n";
+            const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Plantilla_Alumnos.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Muestra alertas visuales dentro de la interfaz de carga masiva
+        function mostrarAlertaCSV(tipo, htmlMensaje) {
+            const alerta = document.getElementById('alerta-importacion-csv');
+            if (!alerta) return;
+
+            alerta.classList.remove('oculto');
+            if (tipo === 'exito') {
+                alerta.className = "mb-4 p-4 rounded-xl text-sm flex items-start gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm";
+                alerta.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5"></i><div class="leading-relaxed">${htmlMensaje}</div>`;
+            } else {
+                alerta.className = "mb-4 p-4 rounded-xl text-sm flex items-start gap-3 bg-red-50 text-red-800 border border-red-200 shadow-sm";
+                alerta.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-600 text-lg mt-0.5"></i><div class="leading-relaxed">${htmlMensaje}</div>`;
+            }
+        }
+
+        // Parsea una línea de CSV soportando comas, puntos y coma y valores entre comillas
+        function parsearLineaCSV(linea, separador) {
+            const campos = [];
+            let actual = '';
+            let dentroComillas = false;
+
+            for (let i = 0; i < linea.length; i++) {
+                const char = linea[i];
+                if (char === '"' || char === "'") {
+                    dentroComillas = !dentroComillas;
+                } else if (char === separador && !dentroComillas) {
+                    campos.push(actual.trim().replace(/^["']|["']$/g, ''));
+                    actual = '';
+                } else {
+                    actual += char;
+                }
+            }
+            campos.push(actual.trim().replace(/^["']|["']$/g, ''));
+            return campos;
+        }
+
+        // Lee el archivo con FileReader, valida campos (2 celdas: ID_ALUMNO y NOMBRE), actualiza/crea alumnos con saldo 0 y sincroniza con Firebase
+        function procesarImportacionCSV(e) {
+            e.preventDefault();
+
+            const cursoSelect = document.getElementById('csv-curso-destino');
+            const cursoId = cursoSelect ? cursoSelect.value : null;
+
+            if (!cursoId) {
+                mostrarAlertaCSV('error', 'Debes seleccionar un curso de destino antes de importar alumnos.');
+                return;
+            }
+
+            const inputArchivo = document.getElementById('input-archivo-csv');
+            if (!inputArchivo || !inputArchivo.files || inputArchivo.files.length === 0) {
+                mostrarAlertaCSV('error', 'Por favor selecciona un archivo CSV (.csv) para comenzar.');
+                return;
+            }
+
+            const archivo = inputArchivo.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                try {
+                    let contenido = event.target.result;
+                    // Limpiar posible BOM
+                    contenido = contenido.replace(/^\uFEFF/, '');
+
+                    const lineas = contenido.split(/\r\n|\n|\r/).map(l => l.trim()).filter(l => l.length > 0);
+
+                    if (lineas.length === 0) {
+                        mostrarAlertaCSV('error', 'El archivo seleccionado está vacío.');
+                        return;
+                    }
+
+                    // Detección automática del separador (, o ; o tabulación)
+                    const primeraLinea = lineas[0];
+                    const separador = primeraLinea.includes(';') ? ';' : (primeraLinea.includes('\t') ? '\t' : ',');
+
+                    // Verificar si la primera fila es encabezado (ej. ID_ALUMNO, NOMBRE)
+                    const colsPrimera = parsearLineaCSV(primeraLinea, separador);
+                    const primerColNorm = (colsPrimera[0] || '').toLowerCase().replace(/[\s_-]/g, '');
+                    const segColNorm = (colsPrimera[1] || '').toLowerCase().replace(/[\s_-]/g, '');
+                    const esCabecera = primerColNorm.includes('id') || primerColNorm.includes('alumno') || primerColNorm.includes('rut') || segColNorm.includes('nom');
+
+                    const inicioFila = esCabecera ? 1 : 0;
+
+                    if (lineas.length <= inicioFila) {
+                        mostrarAlertaCSV('error', 'El archivo CSV solo contiene la cabecera. Debe incluir al menos una fila con las 2 celdas: ID_ALUMNO y NOMBRE.');
+                        return;
+                    }
+
+                    let creados = 0;
+                    let actualizados = 0;
+                    let errores = [];
+
+                    // Procesar filas de datos con exactamente 2 celdas: Columna 1 (ID_ALUMNO) y Columna 2 (NOMBRE)
+                    for (let i = inicioFila; i < lineas.length; i++) {
+                        const filaNum = i + 1;
+                        const columnas = parsearLineaCSV(lineas[i], separador);
+
+                        if (columnas.length < 2) {
+                            errores.push(`Fila ${filaNum}: Formato incompleto (se requieren 2 celdas: Celda 1 = ID_ALUMNO, Celda 2 = NOMBRE).`);
+                            continue;
+                        }
+
+                        const idAlumno = columnas[0].trim();
+                        const nombreCompleto = columnas[1].trim();
+
+                        if (!idAlumno || !nombreCompleto) {
+                            errores.push(`Fila ${filaNum}: Celdas vacías (el ID_ALUMNO y el NOMBRE no pueden estar en blanco).`);
+                            continue;
+                        }
+
+                        // Verificar si el alumno ya existe en la base de datos
+                        const indexExistente = estado.alumnos.findIndex(a => a.id.toUpperCase() === idAlumno.toUpperCase());
+
+                        if (indexExistente !== -1) {
+                            // Actualizar alumno existente vinculándolo al curso y profesor activo, conservando su saldo/histórico
+                            estado.alumnos[indexExistente].nombre = nombreCompleto;
+                            estado.alumnos[indexExistente].cursoId = cursoId;
+                            estado.alumnos[indexExistente].profesorId = usuarioActual.id;
+                            actualizados++;
+                        } else {
+                            // Crear nuevo alumno con saldo e histórico inicial 0
+                            estado.alumnos.push({
+                                id: idAlumno,
+                                cursoId: cursoId,
+                                profesorId: usuarioActual.id,
+                                nombre: nombreCompleto,
+                                saldo: 0,
+                                historico: 0
+                            });
+                            creados++;
+                        }
+                    }
+
+                    if (creados === 0 && actualizados === 0) {
+                        mostrarAlertaCSV('error', `No se pudo importar ningún registro debido a inconsistencias de formato:<br>${errores.join('<br>')}`);
+                        return;
+                    }
+
+                    // Sincronizar cambios masivos en Firebase Realtime Database
+                    guardarDatos();
+                    inputArchivo.value = '';
+
+                    const cursoObj = estado.cursos.find(c => c.id === cursoId);
+                    const cursoNombre = cursoObj ? cursoObj.nombre : 'el curso';
+
+                    let mensajeExito = `<strong>¡Importación masiva completada exitosamente en "${cursoNombre}"!</strong><br>` +
+                        `• Nuevos alumnos registrados: <strong>${creados}</strong><br>` +
+                        `• Alumnos existentes actualizados: <strong>${actualizados}</strong>`;
+
+                    if (errores.length > 0) {
+                        mensajeExito += `<br><span class="text-amber-700 font-bold">• Filas omitidas con error (${errores.length}):</span><br>` + errores.slice(0, 3).join('<br>');
+                        if (errores.length > 3) mensajeExito += `<br>... y ${errores.length - 3} errores adicionales.`;
+                    }
+
+                    mostrarAlertaCSV('exito', mensajeExito);
+                    renderizarGrillaCursosProf();
+                    actualizarSelectoresCursoProfesor();
+                    if (usuarioActual.rol === 'profesor') {
+                        renderizarTarjetas();
+                    }
+                } catch (err) {
+                    console.error("Error al procesar el archivo CSV:", err);
+                    mostrarAlertaCSV('error', 'Ocurrió un error al procesar el archivo: ' + err.message);
+                }
+            };
+
+            reader.onerror = function () {
+                mostrarAlertaCSV('error', 'Error al leer el archivo desde el dispositivo.');
+            };
+
+            reader.readAsText(archivo, 'UTF-8');
         }
 
         // Pestaña "Mis Cursos": Crear curso y grilla para verlos
@@ -1011,6 +1569,8 @@
             actualizarSelectoresCursoProfesor();
             const regSelect = document.getElementById('prof-reg-curso-select');
             if (regSelect) regSelect.value = cursoId;
+            const csvSelect = document.getElementById('csv-curso-destino');
+            if (csvSelect) csvSelect.value = cursoId;
             const filtroCred = document.getElementById('filtro-credenciales-curso');
             if (filtroCred) filtroCred.value = cursoId;
             cambiarTab('prof-credenciales');
@@ -1109,27 +1669,42 @@
 
                 const card = document.createElement('div');
                 card.id = 'card-' + al.id;
-                card.className = "bg-gradient-to-b from-indigo-900 to-indigo-600 text-white rounded-2xl p-4 shadow-2xl relative w-full max-w-[260px] mx-auto aspect-[0.63] flex flex-col justify-between overflow-hidden border border-indigo-400/30";
+                card.className = "tarjeta-credencial bg-gradient-to-b from-indigo-950 via-indigo-900 to-indigo-700 text-white rounded-2xl p-4 shadow-2xl relative mx-auto border border-indigo-400/30";
                 card.innerHTML = `
-                    <div class="absolute -top-20 -right-20 w-48 h-48 bg-white opacity-5 rounded-full blur-2xl"></div>
-                    <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-indigo-300 opacity-20 rounded-full blur-2xl"></div>
-                    <div class="flex flex-col z-10 relative h-1/2 justify-between pb-2">
-                        <div class="font-bold tracking-widest text-xs uppercase flex items-center justify-center gap-2 drop-shadow-md bg-white/10 py-2 rounded-xl backdrop-blur-sm border border-white/20">
+                    <div class="absolute -top-20 -right-20 w-48 h-48 bg-white opacity-5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-indigo-300 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+                    
+                    <!-- Sección Superior e Información del Alumno -->
+                    <div class="flex flex-col z-10 relative justify-start items-center w-full">
+                        <div class="w-full font-bold tracking-widest text-[11px] uppercase flex items-center justify-center gap-2 drop-shadow-md bg-white/10 py-1.5 rounded-xl backdrop-blur-sm border border-white/20">
                             <i class="fa-solid fa-building-columns text-amber-300"></i> BANCO ESCOLAR
                         </div>
-                        <div class="flex flex-col items-center text-center mt-auto">
-                            <div class="w-10 h-8 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-500 rounded-md flex flex-col justify-evenly p-1 mb-3 shadow-inner border border-amber-600/50">
-                                <div class="w-full h-px bg-amber-700/40 shadow-sm"></div>
-                                <div class="w-full h-px bg-amber-700/40 shadow-sm"></div>
-                            </div>
-                            <div class="font-bold text-xl uppercase tracking-wide drop-shadow-md leading-tight px-2">${al.nombre}</div>
-                            <div class="text-xs uppercase opacity-80 mt-1">${cursoNombre}</div>
-                            <div class="font-mono text-[10px] tracking-widest opacity-90 mt-2 text-amber-200 bg-black/20 px-3 py-1 rounded-full">${al.id}</div>
+                        
+                        <div class="w-9 h-7 bg-gradient-to-br from-amber-200 via-amber-400 to-amber-500 rounded-md flex flex-col justify-evenly p-1 my-2 shadow-inner border border-amber-600/50">
+                            <div class="w-full h-px bg-amber-700/40 shadow-sm"></div>
+                            <div class="w-full h-px bg-amber-700/40 shadow-sm"></div>
+                        </div>
+
+                        <!-- Contenedor con alto reservado exacto para 2 líneas de texto: no desplaza el QR -->
+                        <div class="nombre-alumno-credencial px-1">
+                            <span class="font-bold text-base leading-tight uppercase tracking-wide drop-shadow-md line-clamp-2" title="${al.nombre}">
+                                ${al.nombre}
+                            </span>
+                        </div>
+
+                        <div class="text-[11px] uppercase opacity-80 font-medium truncate max-w-full px-2 mt-0.5 text-center">
+                            ${cursoNombre || '&nbsp;'}
+                        </div>
+                        
+                        <div class="font-mono text-[10px] tracking-widest opacity-90 text-amber-200 bg-black/30 px-3 py-0.5 rounded-full mt-1.5">
+                            ${al.id}
                         </div>
                     </div>
-                    <div class="z-10 relative bg-white rounded-xl shadow-lg p-3 flex flex-col items-center justify-center mt-3 flex-grow border-b-4 border-indigo-300">
-                        <div id="qr-${al.id}" class="flex items-center justify-center"></div>
-                        <p class="text-[10px] text-center text-indigo-900 mt-2 uppercase font-extrabold tracking-widest">Escanear Credencial</p>
+
+                    <!-- Contenedor Fijo para Código QR (dimensiones estrictas, inmune a variaciones de texto) -->
+                    <div class="qr-contenedor-credencial z-10 relative bg-white rounded-xl shadow-lg p-2.5 mt-2 border-b-4 border-indigo-300">
+                        <div id="qr-${al.id}" class="flex items-center justify-center w-[150px] h-[150px]"></div>
+                        <p class="text-[9px] text-center text-indigo-900 mt-1 uppercase font-extrabold tracking-widest">Escanear Credencial</p>
                     </div>
                 `;
 
@@ -1139,8 +1714,8 @@
 
                 new QRCode(card.querySelector(`#qr-${al.id}`), {
                     text: al.id,
-                    width: 160,
-                    height: 160,
+                    width: 150,
+                    height: 150,
                     colorDark: "#312e81",
                     colorLight: "#ffffff",
                     correctLevel: QRCode.CorrectLevel.H
@@ -1258,6 +1833,464 @@
                 aplicarPuntos(m, document.getElementById('concepto-personalizado').value || "Manual");
                 document.getElementById('monto-personalizado').value = '';
                 document.getElementById('concepto-personalizado').value = '';
+            }
+        }
+
+        // --- FUNCIONES DE ABONO MASIVO DE PUNTOS ---
+
+        let operacionAbonoPendiente = null;
+
+        function onCambioCajeroCurso() {
+            const cajeroSelect = document.getElementById('cajero-curso-selector');
+            const abonoSelect = document.getElementById('abono-masivo-curso-select');
+            if (cajeroSelect && abonoSelect && cajeroSelect.value) {
+                abonoSelect.value = cajeroSelect.value;
+            }
+            actualizarInfoCursoMasivo();
+        }
+
+        function actualizarInfoCursoMasivo() {
+            const select = document.getElementById('abono-masivo-curso-select');
+            const info = document.getElementById('abono-masivo-info-alumnos');
+            if (!select || !info) return;
+
+            if (usuarioActual.rol !== 'profesor') return;
+
+            const valor = select.value;
+            if (valor === 'TODOS') {
+                const total = estado.alumnos.filter(a => a.profesorId === usuarioActual.id).length;
+                info.innerHTML = `<i class="fa-solid fa-users text-indigo-600 mr-1"></i> Se abonará a <strong>${total}</strong> alumnos registrados en todos tus cursos.`;
+            } else if (valor) {
+                const total = estado.alumnos.filter(a => a.profesorId === usuarioActual.id && a.cursoId === valor).length;
+                const cursoObj = estado.cursos.find(c => c.id === valor);
+                const nombreCurso = cursoObj ? cursoObj.nombre : 'este curso';
+                info.innerHTML = `<i class="fa-solid fa-user-group text-indigo-600 mr-1"></i> Se abonará a <strong>${total}</strong> alumnos registrados en <em>${nombreCurso}</em>.`;
+            } else {
+                info.innerHTML = `<span class="text-amber-600 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> No hay cursos disponibles para abonar.</span>`;
+            }
+        }
+
+        function cambiarModoAbonoMasivo(modo) {
+            const btnCurso = document.getElementById('tab-btn-abono-curso');
+            const btnArchivo = document.getElementById('tab-btn-abono-archivo');
+            const panelCurso = document.getElementById('panel-abono-curso');
+            const panelArchivo = document.getElementById('panel-abono-archivo');
+            const alerta = document.getElementById('alerta-abono-masivo');
+            if (alerta) alerta.classList.add('oculto');
+
+            if (modo === 'curso') {
+                btnCurso.className = "flex-1 py-2.5 px-4 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-2";
+                btnArchivo.className = "flex-1 py-2.5 px-4 rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-2";
+                panelCurso.classList.remove('oculto');
+                panelArchivo.classList.add('oculto');
+                actualizarInfoCursoMasivo();
+            } else {
+                btnArchivo.className = "flex-1 py-2.5 px-4 rounded-lg bg-white text-indigo-700 shadow-sm transition flex items-center justify-center gap-2";
+                btnCurso.className = "flex-1 py-2.5 px-4 rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-2";
+                panelArchivo.classList.remove('oculto');
+                panelCurso.classList.add('oculto');
+            }
+        }
+
+        function setPresetPuntosMasivos(pts) {
+            const input = document.getElementById('abono-masivo-puntos');
+            if (input) input.value = pts;
+        }
+
+        function descargarPlantillaAbonoCSV() {
+            let ejemploContenido = "\uFEFFID_Alumno,Puntos_Abono\n";
+            const misAlumnos = estado.alumnos.filter(a => a.profesorId === usuarioActual.id).slice(0, 3);
+            if (misAlumnos.length > 0) {
+                misAlumnos.forEach((al, idx) => {
+                    const ptsEjemplo = (idx + 1) * 25;
+                    ejemploContenido += `${al.id},${ptsEjemplo}\n`;
+                });
+            } else {
+                ejemploContenido += "ALUM-1001,50\nALUM-1002,30\nALUM-1003,-15\n";
+            }
+
+            const blob = new Blob([ejemploContenido], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Plantilla_Abono_Puntos.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function mostrarAlertaAbonoMasivo(tipo, htmlMensaje) {
+            const alerta = document.getElementById('alerta-abono-masivo');
+            if (!alerta) return;
+
+            alerta.classList.remove('oculto');
+            if (tipo === 'exito') {
+                alerta.className = "p-4 rounded-xl text-sm flex items-start gap-3 bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm";
+                alerta.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5"></i><div class="leading-relaxed flex-grow">${htmlMensaje}</div>`;
+            } else if (tipo === 'error') {
+                alerta.className = "p-4 rounded-xl text-sm flex items-start gap-3 bg-red-50 text-red-800 border border-red-200 shadow-sm";
+                alerta.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-600 text-lg mt-0.5"></i><div class="leading-relaxed flex-grow">${htmlMensaje}</div>`;
+            } else if (tipo === 'progreso') {
+                alerta.className = "p-4 rounded-xl text-sm flex items-start gap-3 bg-indigo-50 text-indigo-800 border border-indigo-200 shadow-sm";
+                alerta.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-600 text-lg mt-0.5"></i><div class="leading-relaxed flex-grow">${htmlMensaje}</div>`;
+            } else {
+                alerta.className = "p-4 rounded-xl text-sm flex items-start gap-3 bg-amber-50 text-amber-800 border border-amber-200 shadow-sm";
+                alerta.innerHTML = `<i class="fa-solid fa-circle-info text-amber-600 text-lg mt-0.5"></i><div class="leading-relaxed flex-grow">${htmlMensaje}</div>`;
+            }
+        }
+
+        function iniciarAbonoCursoCompleto() {
+            const selectCurso = document.getElementById('abono-masivo-curso-select');
+            const inputPuntos = document.getElementById('abono-masivo-puntos');
+            const inputConcepto = document.getElementById('abono-masivo-concepto');
+
+            const cursoId = selectCurso ? selectCurso.value : '';
+            if (!cursoId) {
+                mostrarAlertaAbonoMasivo('error', 'Por favor selecciona un curso antes de aplicar el abono.');
+                return;
+            }
+
+            const puntos = parseInt(inputPuntos.value);
+            if (isNaN(puntos) || puntos === 0) {
+                mostrarAlertaAbonoMasivo('error', 'Ingresa una cantidad válida de puntos (diferente de 0). Puedes usar números positivos para bonificar o negativos para descontar.');
+                inputPuntos.focus();
+                return;
+            }
+
+            let alumnosDestino = estado.alumnos.filter(a => a.profesorId === usuarioActual.id);
+            let nombreDestino = "Todos tus cursos";
+            if (cursoId !== 'TODOS') {
+                alumnosDestino = alumnosDestino.filter(a => a.cursoId === cursoId);
+                const cursoObj = estado.cursos.find(c => c.id === cursoId);
+                nombreDestino = cursoObj ? cursoObj.nombre : 'Curso seleccionado';
+            }
+
+            if (alumnosDestino.length === 0) {
+                mostrarAlertaAbonoMasivo('error', `No se encontraron alumnos registrados en "${nombreDestino}" para aplicar el abono.`);
+                return;
+            }
+
+            const concepto = inputConcepto.value.trim() || (puntos > 0 ? "Abono masivo al curso" : "Ajuste masivo de puntos");
+
+            operacionAbonoPendiente = {
+                tipo: 'curso',
+                cursoId: cursoId,
+                nombreDestino: nombreDestino,
+                puntos: puntos,
+                concepto: concepto,
+                alumnosIds: alumnosDestino.map(a => a.id),
+                totalAlumnos: alumnosDestino.length
+            };
+
+            abrirModalConfirmarAbono({
+                modalidad: `Abono a Curso Completo (${nombreDestino})`,
+                destinatarios: `${alumnosDestino.length} estudiantes`,
+                puntos: `${puntos > 0 ? '+' : ''}${puntos} pts c/u`,
+                esPositivo: puntos > 0,
+                concepto: concepto
+            });
+        }
+
+        function iniciarAbonoPorArchivo() {
+            const inputArchivo = document.getElementById('input-archivo-abono-csv');
+            const inputConcepto = document.getElementById('abono-archivo-concepto');
+
+            if (!inputArchivo || !inputArchivo.files || inputArchivo.files.length === 0) {
+                mostrarAlertaAbonoMasivo('error', 'Por favor selecciona un archivo CSV (.csv) con las columnas <code>ID_Alumno,Puntos_Abono</code>.');
+                return;
+            }
+
+            const archivo = inputArchivo.files[0];
+            const reader = new FileReader();
+
+            mostrarAlertaAbonoMasivo('progreso', 'Analizando archivo CSV...');
+
+            reader.onload = function (event) {
+                try {
+                    let contenido = event.target.result;
+                    contenido = contenido.replace(/^\uFEFF/, '');
+                    const lineas = contenido.split(/\r\n|\n|\r/).map(l => l.trim()).filter(l => l.length > 0);
+
+                    if (lineas.length <= 1) {
+                        mostrarAlertaAbonoMasivo('error', 'El archivo CSV está vacío o solo contiene la cabecera. Debe incluir al menos una fila con datos (ID_Alumno, Puntos_Abono).');
+                        return;
+                    }
+
+                    const cabecera = lineas[0];
+                    const separador = cabecera.includes(';') ? ';' : (cabecera.includes('\t') ? '\t' : ',');
+
+                    const registrosValidos = [];
+                    const errores = [];
+                    let puntosAcumulados = 0;
+
+                    for (let i = 1; i < lineas.length; i++) {
+                        const filaNum = i + 1;
+                        const columnas = parsearLineaCSV(lineas[i], separador);
+
+                        if (columnas.length < 2) {
+                            errores.push(`Fila ${filaNum}: Formato incompleto (se requieren ID_Alumno y Puntos_Abono).`);
+                            continue;
+                        }
+
+                        const idAlumno = columnas[0].trim();
+                        const puntosStr = columnas[1].trim();
+
+                        if (!idAlumno || puntosStr === '') {
+                            errores.push(`Fila ${filaNum}: Campos en blanco.`);
+                            continue;
+                        }
+
+                        const puntos = parseInt(puntosStr);
+                        if (isNaN(puntos) || puntos === 0) {
+                            errores.push(`Fila ${filaNum}: Cantidad de puntos inválida "${puntosStr}".`);
+                            continue;
+                        }
+
+                        const alumno = estado.alumnos.find(a => a.id.toUpperCase() === idAlumno.toUpperCase());
+                        if (!alumno) {
+                            errores.push(`Fila ${filaNum}: Alumno con ID "${idAlumno}" no existe en el sistema.`);
+                            continue;
+                        }
+
+                        if (alumno.profesorId !== usuarioActual.id) {
+                            errores.push(`Fila ${filaNum}: El alumno "${alumno.nombre}" (${idAlumno}) pertenece a otro profesor.`);
+                            continue;
+                        }
+
+                        registrosValidos.push({
+                            id: alumno.id,
+                            nombre: alumno.nombre,
+                            puntos: puntos,
+                            cursoId: alumno.cursoId
+                        });
+                        puntosAcumulados += puntos;
+                    }
+
+                    if (registrosValidos.length === 0) {
+                        let htmlErr = `<strong>No se encontraron registros válidos para procesar en el archivo:</strong><br>${errores.slice(0, 5).join('<br>')}`;
+                        if (errores.length > 5) htmlErr += `<br>... y ${errores.length - 5} errores adicionales.`;
+                        mostrarAlertaAbonoMasivo('error', htmlErr);
+                        return;
+                    }
+
+                    const concepto = inputConcepto.value.trim() || "Abono mediante archivo CSV";
+
+                    operacionAbonoPendiente = {
+                        tipo: 'archivo',
+                        archivoNombre: archivo.name,
+                        registrosValidos: registrosValidos,
+                        totalPuntos: puntosAcumulados,
+                        concepto: concepto,
+                        errores: errores
+                    };
+
+                    let detallesDestinatarios = `${registrosValidos.length} estudiantes`;
+                    if (errores.length > 0) {
+                        detallesDestinatarios += ` (${errores.length} filas con error omitidas)`;
+                    }
+
+                    abrirModalConfirmarAbono({
+                        modalidad: `Archivo CSV (${archivo.name})`,
+                        destinatarios: detallesDestinatarios,
+                        puntos: `Diferenciados por alumno (${puntosAcumulados >= 0 ? '+' : ''}${puntosAcumulados} pts netos en total)`,
+                        esPositivo: puntosAcumulados >= 0,
+                        concepto: concepto
+                    });
+
+                    document.getElementById('alerta-abono-masivo').classList.add('oculto');
+                } catch (err) {
+                    console.error("Error al procesar CSV de abono:", err);
+                    mostrarAlertaAbonoMasivo('error', 'Ocurrió un error al procesar el archivo CSV: ' + err.message);
+                }
+            };
+
+            reader.onerror = function () {
+                mostrarAlertaAbonoMasivo('error', 'Error al leer el archivo desde el dispositivo.');
+            };
+
+            reader.readAsText(archivo, 'UTF-8');
+        }
+
+        function abrirModalConfirmarAbono(info) {
+            document.getElementById('confirm-modal-modalidad').innerText = info.modalidad;
+            document.getElementById('confirm-modal-destinatarios').innerText = info.destinatarios;
+            const ptsEl = document.getElementById('confirm-modal-puntos');
+            ptsEl.innerText = info.puntos;
+            ptsEl.className = info.esPositivo ? 'font-extrabold text-emerald-600 text-sm' : 'font-extrabold text-red-600 text-sm';
+            document.getElementById('confirm-modal-concepto').innerText = info.concepto;
+
+            const btnConfirm = document.getElementById('btn-confirmar-ejecutar-abono');
+            btnConfirm.disabled = false;
+            btnConfirm.innerHTML = '<i class="fa-solid fa-check"></i> Sí, Aplicar Abono';
+
+            document.getElementById('modal-confirmar-abono-masivo').classList.remove('oculto');
+        }
+
+        function cerrarModalConfirmarAbono() {
+            document.getElementById('modal-confirmar-abono-masivo').classList.add('oculto');
+            operacionAbonoPendiente = null;
+        }
+
+        async function ejecutarAbonoConfirmado() {
+            if (!operacionAbonoPendiente) return;
+
+            const btnConfirm = document.getElementById('btn-confirmar-ejecutar-abono');
+            btnConfirm.disabled = true;
+            btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Aplicando a Firebase...';
+
+            mostrarAlertaAbonoMasivo('progreso', 'Sincronizando puntos con Firebase Realtime Database...');
+
+            try {
+                // 1. Lectura segura y directa de Firebase Realtime Database para garantizar consistencia
+                const snapshot = await database.ref(DB_REF).once('value');
+                const datosRemotos = snapshot.val();
+                if (datosRemotos) {
+                    if (Array.isArray(datosRemotos.alumnos)) estado.alumnos = datosRemotos.alumnos;
+                    if (Array.isArray(datosRemotos.transacciones)) estado.transacciones = datosRemotos.transacciones;
+                }
+                if (!estado.alumnos) estado.alumnos = [];
+                if (!estado.transacciones) estado.transacciones = [];
+
+                let totalEstudiantesAfectados = 0;
+                let totalPuntosSumados = 0;
+                const fechaAhora = new Date().toISOString();
+
+                if (operacionAbonoPendiente.tipo === 'curso') {
+                    const { puntos, concepto, alumnosIds } = operacionAbonoPendiente;
+
+                    estado.alumnos.forEach(alumno => {
+                        if (alumnosIds.includes(alumno.id)) {
+                            // Sumar de forma segura sobre saldo actual existente (saldo_actual + nuevos_puntos)
+                            const saldoActual = Number(alumno.saldo) || 0;
+                            const historicoActual = Number(alumno.historico) || 0;
+
+                            alumno.saldo = saldoActual + puntos;
+                            if (puntos > 0) {
+                                alumno.historico = historicoActual + puntos;
+                            }
+
+                            // Registro individual de movimiento en el alumno
+                            if (!alumno.historial) alumno.historial = [];
+                            alumno.historial.push({
+                                fecha: fechaAhora,
+                                concepto: concepto,
+                                monto: puntos,
+                                saldoResultante: alumno.saldo
+                            });
+
+                            totalEstudiantesAfectados++;
+                            totalPuntosSumados += puntos;
+                        }
+                    });
+
+                    // Registro masivo global de la transacción
+                    estado.transacciones.push({
+                        id: 'TX-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                        tipo: 'ABONO_MASIVO_CURSO',
+                        profesorId: usuarioActual.id,
+                        cursoId: operacionAbonoPendiente.cursoId,
+                        concepto: concepto,
+                        puntosPorAlumno: puntos,
+                        totalEstudiantes: totalEstudiantesAfectados,
+                        puntosTotalesAbonados: totalPuntosSumados,
+                        fecha: fechaAhora
+                    });
+
+                } else if (operacionAbonoPendiente.tipo === 'archivo') {
+                    const { registrosValidos, concepto } = operacionAbonoPendiente;
+
+                    registrosValidos.forEach(item => {
+                        const alumno = estado.alumnos.find(a => a.id.toUpperCase() === item.id.toUpperCase());
+                        if (alumno) {
+                            const saldoActual = Number(alumno.saldo) || 0;
+                            const historicoActual = Number(alumno.historico) || 0;
+
+                            alumno.saldo = saldoActual + item.puntos;
+                            if (item.puntos > 0) {
+                                alumno.historico = historicoActual + item.puntos;
+                            }
+
+                            if (!alumno.historial) alumno.historial = [];
+                            alumno.historial.push({
+                                fecha: fechaAhora,
+                                concepto: concepto,
+                                monto: item.puntos,
+                                saldoResultante: alumno.saldo
+                            });
+
+                            totalEstudiantesAfectados++;
+                            totalPuntosSumados += item.puntos;
+                        }
+                    });
+
+                    // Registro masivo global de la transacción
+                    estado.transacciones.push({
+                        id: 'TX-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                        tipo: 'ABONO_MASIVO_CSV',
+                        profesorId: usuarioActual.id,
+                        archivo: operacionAbonoPendiente.archivoNombre,
+                        concepto: concepto,
+                        totalEstudiantes: totalEstudiantesAfectados,
+                        puntosTotalesAbonados: totalPuntosSumados,
+                        fecha: fechaAhora
+                    });
+                }
+
+                // 2. Persistir en Firebase Realtime Database
+                await database.ref(DB_REF).set(estado);
+
+                // 3. Cerrar modal de confirmación
+                document.getElementById('modal-confirmar-abono-masivo').classList.add('oculto');
+
+                // 4. Actualizar vistas y rankings de forma inmediata sin recargar la página
+                actualizarDashboard();
+                renderizarTarjetas();
+                actualizarInfoCursoMasivo();
+
+                // Si hay un alumno abierto en el cajero, refrescar su saldo en pantalla si fue modificado
+                if (alumnoCajeroActual) {
+                    const alumnoRefrescado = estado.alumnos.find(a => a.id === alumnoCajeroActual.id);
+                    if (alumnoRefrescado) {
+                        alumnoCajeroActual = alumnoRefrescado;
+                        const saldoDisplay = document.getElementById('cajero-saldo-display');
+                        if (saldoDisplay) saldoDisplay.innerText = alumnoRefrescado.saldo + ' pts';
+                    }
+                }
+
+                // 5. Feedback visual de éxito y animación
+                if (totalPuntosSumados > 0) {
+                    confetti({ particleCount: 70, spread: 65, origin: { y: 0.7 } });
+                }
+
+                const opCopia = operacionAbonoPendiente;
+                operacionAbonoPendiente = null;
+
+                let mensajeExito = `<strong>¡Puntos asignados exitosamente a ${totalEstudiantesAfectados} estudiantes!</strong><br>` +
+                    `• Puntos netos asignados: <strong>${totalPuntosSumados >= 0 ? '+' : ''}${totalPuntosSumados} pts</strong><br>` +
+                    `• Concepto registrado: <em>"${opCopia.concepto}"</em>`;
+
+                if (opCopia.errores && opCopia.errores.length > 0) {
+                    mensajeExito += `<br><span class="text-amber-700 font-semibold">• Filas con inconsistencias omitidas: ${opCopia.errores.length}</span>`;
+                }
+
+                mostrarAlertaAbonoMasivo('exito', mensajeExito);
+
+                // Limpiar campos de los formularios
+                const inputPuntos = document.getElementById('abono-masivo-puntos');
+                if (inputPuntos) inputPuntos.value = '';
+                const inputConcepto = document.getElementById('abono-masivo-concepto');
+                if (inputConcepto) inputConcepto.value = '';
+                const inputArchivo = document.getElementById('input-archivo-abono-csv');
+                if (inputArchivo) inputArchivo.value = '';
+                const inputConceptoArchivo = document.getElementById('abono-archivo-concepto');
+                if (inputConceptoArchivo) inputConceptoArchivo.value = '';
+
+            } catch (error) {
+                console.error("Error al ejecutar abono masivo:", error);
+                document.getElementById('modal-confirmar-abono-masivo').classList.add('oculto');
+                mostrarAlertaAbonoMasivo('error', 'Ocurrió un error al guardar los puntos en Firebase: ' + (error.message || error));
+                operacionAbonoPendiente = null;
             }
         }
 
